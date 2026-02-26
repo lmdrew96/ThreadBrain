@@ -1,10 +1,69 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { documents } from "@/lib/db/schema";
+import { documents, readingSessions, chunks } from "@/lib/db/schema";
+import { eq, desc, and, count } from "drizzle-orm";
 import { extractTextFromPdf } from "@/lib/pdf";
+import { uploadToR2 } from "@/lib/r2";
 import { wordCount } from "@/lib/utils";
 
+// GET: List all user documents with latest session info
+export async function GET() {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Fetch user's documents
+  const userDocs = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.userId, userId))
+    .orderBy(desc(documents.createdAt));
+
+  // Fetch all sessions for these documents
+  const userSessions = await db
+    .select()
+    .from(readingSessions)
+    .where(eq(readingSessions.userId, userId))
+    .orderBy(desc(readingSessions.startedAt));
+
+  // Get chunk counts for all sessions
+  const chunkCounts = await db
+    .select({
+      sessionId: chunks.sessionId,
+      total: count(),
+    })
+    .from(chunks)
+    .groupBy(chunks.sessionId);
+
+  const chunkCountMap = new Map(
+    chunkCounts.map((c) => [c.sessionId, Number(c.total)])
+  );
+
+  // Group sessions by document, take latest
+  const sessionsByDoc = new Map<
+    string,
+    (typeof userSessions)[0] & { totalChunks: number }
+  >();
+  for (const session of userSessions) {
+    if (!sessionsByDoc.has(session.documentId)) {
+      sessionsByDoc.set(session.documentId, {
+        ...session,
+        totalChunks: chunkCountMap.get(session.id) ?? 0,
+      });
+    }
+  }
+
+  const result = userDocs.map((doc) => ({
+    ...doc,
+    latestSession: sessionsByDoc.get(doc.id) ?? null,
+  }));
+
+  return NextResponse.json(result);
+}
+
+// POST: Create a new document from PDF upload or text paste
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) {
@@ -17,6 +76,7 @@ export async function POST(req: NextRequest) {
     let title: string;
     let rawText: string;
     let sourceType: "pdf" | "paste";
+    let fileKey: string | undefined;
 
     if (contentType.includes("multipart/form-data")) {
       // PDF upload
@@ -41,6 +101,16 @@ export async function POST(req: NextRequest) {
       rawText = await extractTextFromPdf(buffer);
       title = file.name.replace(/\.pdf$/i, "");
       sourceType = "pdf";
+
+      // Upload original PDF to R2 (non-blocking — don't fail if R2 isn't configured)
+      if (process.env.R2_ACCESS_KEY_ID) {
+        try {
+          const key = `${userId}/${Date.now()}-${file.name}`;
+          fileKey = await uploadToR2(key, buffer, "application/pdf");
+        } catch (err) {
+          console.error("R2 upload failed (non-critical):", err);
+        }
+      }
     } else {
       // Text paste
       const body = await req.json();
@@ -63,11 +133,16 @@ export async function POST(req: NextRequest) {
         title,
         sourceType,
         rawText,
+        fileKey,
         wordCount: wordCount(rawText),
       })
       .returning();
 
-    return NextResponse.json({ documentId: doc.id, title: doc.title, wordCount: doc.wordCount });
+    return NextResponse.json({
+      documentId: doc.id,
+      title: doc.title,
+      wordCount: doc.wordCount,
+    });
   } catch (error) {
     console.error("Document creation failed:", error);
     return NextResponse.json(

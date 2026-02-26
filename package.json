@@ -7,10 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:generate": "tsx node_modules/.bin/drizzle-kit generate",
+    "db:migrate": "tsx node_modules/.bin/drizzle-kit migrate",
+    "db:push": "tsx node_modules/.bin/drizzle-kit push",
+    "db:studio": "tsx node_modules/.bin/drizzle-kit studio"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -19,14 +19,16 @@
     "@clerk/themes": "^2.4.55",
     "@neondatabase/serverless": "^0.10.0",
     "@radix-ui/react-slot": "^1.1.0",
+    "@tailwindcss/typography": "^0.5.19",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "drizzle-orm": "^0.38.0",
+    "drizzle-orm": "^0.45.1",
     "lucide-react": "^0.469.0",
     "next": "^15.1.0",
     "pdf-parse": "^1.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
@@ -35,11 +37,12 @@
     "@types/pdf-parse": "^1.1.4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "drizzle-kit": "^0.30.0",
+    "drizzle-kit": "^0.31.9",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.1.0",
     "postcss": "^8.5.0",
     "tailwindcss": "^4.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.0"
   }
 }

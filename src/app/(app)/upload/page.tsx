@@ -1,16 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Step = "upload" | "setup";
 
 export default function UploadPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>("upload");
   const [activeTab, setActiveTab] = useState<"pdf" | "paste">("pdf");
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [docTitle, setDocTitle] = useState("");
+
+  // If navigated from dashboard with an existing documentId, skip to setup
+  useEffect(() => {
+    const existingDocId = searchParams.get("documentId");
+    if (existingDocId) {
+      fetch(`/api/documents/${existingDocId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((doc) => {
+          if (doc) {
+            setDocumentId(doc.id);
+            setDocTitle(doc.title);
+            setStep("setup");
+          }
+        });
+    }
+  }, [searchParams]);
 
   function handleDocumentCreated(id: string, title: string) {
     setDocumentId(id);

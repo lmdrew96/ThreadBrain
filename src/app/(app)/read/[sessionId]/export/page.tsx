@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Markdown from "react-markdown";
 
 export default function ExportPage() {
   const params = useParams();
@@ -63,10 +64,8 @@ export default function ExportPage() {
 
       {summary && (
         <div className="space-y-6">
-          <div className="rounded-xl border bg-card p-6">
-            <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-card-foreground">
-              {summary}
-            </pre>
+          <div className="rounded-xl border bg-card p-6 prose prose-invert prose-sm max-w-none">
+            <Markdown>{summary}</Markdown>
           </div>
 
           <div className="flex gap-3">
@@ -74,7 +73,7 @@ export default function ExportPage() {
               onClick={handleCopy}
               className="flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
             >
-              {copied ? "Copied!" : "Copy to Clipboard"}
+              {copied ? "Copied!" : "Copy Markdown"}
             </button>
             <button
               onClick={() => router.push("/dashboard")}
