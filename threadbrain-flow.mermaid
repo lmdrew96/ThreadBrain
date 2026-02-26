@@ -1,0 +1,48 @@
+flowchart TD
+    subgraph UPLOAD["📥 Phase 1: Document Ingestion"]
+        A["User uploads PDF<br/>or pastes text"] --> B["pdf-parse extracts<br/>raw text"]
+        B --> C["Store in documents table<br/>(no AI yet — just parsing)"]
+    end
+
+    subgraph SESSION["🎯 Phase 2: Session Setup"]
+        C --> D["User answers 2 questions:<br/>1. Why are you reading this?<br/>2. Energy level (1-5)"]
+        D --> E["Create reading_session record"]
+    end
+
+    subgraph MAP["🧭 Phase 3: The Map"]
+        E --> F["🤖 AI Call #1<br/>Orientation Summary"]
+        F --> G["Display: What it is,<br/>why it matters,<br/>what to expect"]
+        G --> H["User clicks<br/>'Start Reading'"]
+    end
+
+    subgraph CHUNK["🧩 Phase 4: Chunking"]
+        H --> I["🤖 AI Call #2<br/>Split into chunks"]
+        I --> J["Chunk size calibrated<br/>to energy level"]
+        J --> K["Each chunk gets:<br/>• micro-header<br/>• highlighted phrases<br/>• highlight reasons"]
+        K --> L["Store all chunks<br/>in chunks table"]
+    end
+
+    subgraph READ["📖 Phase 5: Reading Loop"]
+        L --> M["Display chunk N<br/>with highlights"]
+        M --> N{"User clicks Next"}
+        N --> O["Save progress<br/>(currentChunkIdx)"]
+        O --> P{"More chunks?"}
+        P -- Yes --> M
+        P -- No --> Q["Session complete!"]
+    end
+
+    subgraph EXPORT["📋 Phase 6: Export"]
+        Q --> R["🤖 AI Call #3<br/>Generate Summary"]
+        R --> S["Markdown summary<br/>+ key quotes<br/>+ page references"]
+        S --> T["Copy / Download /<br/>Send to Research Journal"]
+    end
+
+    style UPLOAD fill:#1e293b,stroke:#3b82f6,color:#e2e8f0
+    style SESSION fill:#1e293b,stroke:#8b5cf6,color:#e2e8f0
+    style MAP fill:#1e293b,stroke:#f59e0b,color:#e2e8f0
+    style CHUNK fill:#1e293b,stroke:#10b981,color:#e2e8f0
+    style READ fill:#1e293b,stroke:#f43f5e,color:#e2e8f0
+    style EXPORT fill:#1e293b,stroke:#06b6d4,color:#e2e8f0
+    style F fill:#f59e0b,stroke:#f59e0b,color:#1e293b
+    style I fill:#10b981,stroke:#10b981,color:#1e293b
+    style R fill:#06b6d4,stroke:#06b6d4,color:#1e293b
