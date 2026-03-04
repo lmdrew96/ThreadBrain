@@ -27,19 +27,24 @@ Generate a 2-3 sentence orientation summary (The Map).`;
 
 export const CHUNKING_SYSTEM_PROMPT = `You are a reading assistant for someone with ADHD. Your job is to split a document into manageable reading chunks.
 
-For each chunk, provide:
-1. microHeader: A casual 5-10 word label explaining what this section DOES (e.g., "The authors explain their method" or "Here's the key finding"). Describe the action, don't summarize the content.
-2. content: The actual text — keep it verbatim from the source, don't paraphrase
-3. highlights: Array of specific phrases/sentences from the content that matter most for the reader's stated purpose. Each highlight needs a brief "reason" explaining why it matters for their goal.
-4. startOffset: Character offset where this chunk starts in the original text
-5. endOffset: Character offset where this chunk ends
+For each chunk, return:
+1. "microHeader": A casual 5-10 word label explaining what this section DOES (e.g., "The authors explain their method" or "Here's the key finding"). Describe the action, don't summarize the content.
+2. "content": The verbatim text of this chunk, copied exactly from the document. Include complete sentences — never cut mid-sentence.
+3. "highlights": Array of {"text": "exact phrase from content", "reason": "why this matters for the reader's purpose"}
 
-Return valid JSON: an array of chunk objects. No markdown wrapping.`;
+Rules:
+- Every word of the original document must appear in exactly one chunk. Do not skip or duplicate text.
+- Chunk boundaries should fall at natural topic transitions or paragraph breaks.
+- Each highlight "text" must be an EXACT substring of that chunk's "content".
+- Preserve the original formatting (paragraph breaks, lists, etc.) within each chunk's content.
+
+CRITICAL: Return ONLY valid JSON. Start with [ and end with ]. No markdown code fences. No text before or after the array.`;
 
 export function buildChunkingPrompt(
-  rawText: string,
+  text: string,
   purpose: string,
-  energyLevel: number
+  energyLevel: number,
+  segmentInfo?: { index: number; total: number; previousHeader?: string }
 ): string {
   const sizeGuide =
     energyLevel <= 2
@@ -48,16 +53,21 @@ export function buildChunkingPrompt(
         ? "Medium chunks: ~2-3 paragraphs, 200-400 words each. Balanced energy."
         : "Longer chunks: ~3-5 paragraphs, 400-600 words each. The reader has good energy today.";
 
+  let contextNote = "";
+  if (segmentInfo && segmentInfo.index > 0 && segmentInfo.previousHeader) {
+    contextNote = `\nNOTE: This is part ${segmentInfo.index + 1} of ${segmentInfo.total} of a longer document. The previous section ended with: "${segmentInfo.previousHeader}". Continue naturally — do not repeat previous content.\n`;
+  }
+
   return `ENERGY LEVEL: ${energyLevel}/5
 CHUNK SIZE GUIDE: ${sizeGuide}
 
 READER'S PURPOSE: ${purpose}
-
-Split this document into reading chunks. Highlights should be specific to their purpose.
+${contextNote}
+Split this text into reading chunks. Include all text verbatim — do not skip or paraphrase any content. Highlights should be specific to the reader's purpose.
 
 DOCUMENT TEXT:
 
-${rawText}`;
+${text}`;
 }
 
 export const EXPORT_SYSTEM_PROMPT = `You are generating a reading summary for someone with ADHD who just finished reading a document. Create a concise, useful export they can reference later.

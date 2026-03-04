@@ -1,8 +1,21 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Markdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import type { Chunk } from "@/types";
+
+// Allow <mark> tags through sanitizer for highlights
+const sanitizeSchema = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames || []), "mark"],
+  attributes: {
+    ...defaultSchema.attributes,
+    mark: ["className"],
+  },
+};
 
 export default function ReadingPage() {
   const params = useParams();
@@ -12,9 +25,12 @@ export default function ReadingPage() {
   const [chunks, setChunks] = useState<Chunk[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const streamStarted = useRef(false);
 
   useEffect(() => {
-    async function loadSession() {
+    async function loadOrGenerateChunks() {
       try {
         // Load session to get currentChunkIdx
         const sessionRes = await fetch(`/api/sessions/${sessionId}`);
@@ -22,27 +38,76 @@ export default function ReadingPage() {
         const session = await sessionRes.json();
         setCurrentIdx(session.currentChunkIdx);
 
-        // Load chunks
+        // Try loading existing chunks
         const chunksRes = await fetch(`/api/sessions/${sessionId}/chunks`);
         if (!chunksRes.ok) throw new Error("Chunks not found");
-        const data = await chunksRes.json();
+        const existing = await chunksRes.json();
 
-        if (data.length === 0) {
-          // No chunks yet — redirect to map to generate them
-          router.push(`/read/${sessionId}/map`);
+        if (existing.length > 0) {
+          setChunks(existing);
+          setLoading(false);
           return;
         }
 
-        setChunks(data);
+        // No chunks — start streaming generation
+        if (streamStarted.current) return;
+        streamStarted.current = true;
+        setIsStreaming(true);
+        setLoading(false);
+
+        const res = await fetch("/api/ai/chunk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
+
+        if (!res.ok || !res.body) {
+          setStreamError("Failed to start chunk generation.");
+          setIsStreaming(false);
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop()!;
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const msg = JSON.parse(line);
+
+              if (msg.type === "chunk") {
+                setChunks((prev) => [...prev, msg.chunk]);
+              } else if (msg.type === "done") {
+                setIsStreaming(false);
+              } else if (msg.type === "error") {
+                setStreamError(msg.message);
+                setIsStreaming(false);
+              }
+            } catch {
+              console.error("Failed to parse stream message:", line);
+            }
+          }
+        }
+
+        setIsStreaming(false);
       } catch (err) {
         console.error(err);
-      } finally {
+        setStreamError("Something went wrong loading your reading session.");
         setLoading(false);
       }
     }
 
-    loadSession();
-  }, [sessionId, router]);
+    loadOrGenerateChunks();
+  }, [sessionId]);
 
   const saveProgress = useCallback(
     async (idx: number) => {
@@ -60,7 +125,7 @@ export default function ReadingPage() {
       const nextIdx = currentIdx + 1;
       setCurrentIdx(nextIdx);
       await saveProgress(nextIdx);
-    } else {
+    } else if (!isStreaming) {
       // Complete the session
       await fetch(`/api/sessions/${sessionId}`, {
         method: "PATCH",
@@ -83,6 +148,7 @@ export default function ReadingPage() {
     }
   }
 
+  // Loading skeleton
   if (loading) {
     return (
       <div className="px-6 py-8 max-w-2xl mx-auto">
@@ -95,10 +161,50 @@ export default function ReadingPage() {
     );
   }
 
+  // Waiting for first chunk to arrive
+  if (chunks.length === 0 && isStreaming) {
+    return (
+      <div className="px-6 py-8 max-w-2xl mx-auto">
+        <div className="rounded-xl border bg-card p-8 text-center">
+          <div className="animate-pulse space-y-3">
+            <div className="h-4 bg-muted rounded w-3/4 mx-auto" />
+            <div className="h-4 bg-muted rounded w-5/6 mx-auto" />
+            <div className="h-4 bg-muted rounded w-2/3 mx-auto" />
+          </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            Preparing your first chunk...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (streamError && chunks.length === 0) {
+    return (
+      <div className="px-6 py-8 max-w-2xl mx-auto">
+        <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-6 text-center">
+          <p className="text-sm text-destructive mb-4">{streamError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (chunks.length === 0) return null;
 
   const chunk = chunks[currentIdx];
+  const totalDisplay = isStreaming ? `~${chunks.length}+` : `${chunks.length}`;
   const progress = ((currentIdx + 1) / chunks.length) * 100;
+
+  const isOnLastAvailable = currentIdx === chunks.length - 1;
+  const isWaitingForNext = isOnLastAvailable && isStreaming;
+  const isSessionEnd = isOnLastAvailable && !isStreaming;
 
   return (
     <div className="px-6 py-8 max-w-2xl mx-auto">
@@ -111,7 +217,7 @@ export default function ReadingPage() {
           &larr; Library
         </button>
         <span className="text-sm text-muted-foreground">
-          Chunk {currentIdx + 1} of {chunks.length}
+          Chunk {currentIdx + 1} of {totalDisplay}
         </span>
       </div>
 
@@ -128,13 +234,14 @@ export default function ReadingPage() {
         {chunk.microHeader}
       </p>
 
-      {/* Chunk content with highlights */}
+      {/* Chunk content with markdown + highlights */}
       <div className="rounded-xl border bg-card p-6 mb-6">
-        <div className="reading-content text-card-foreground">
-          <HighlightedContent
-            content={chunk.content}
-            highlights={chunk.highlights}
-          />
+        <div className="reading-content prose prose-invert prose-lg max-w-none">
+          <Markdown
+            rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}
+          >
+            {injectHighlightMarks(chunk.content, chunk.highlights)}
+          </Markdown>
         </div>
       </div>
 
@@ -155,6 +262,14 @@ export default function ReadingPage() {
         </div>
       )}
 
+      {/* Streaming indicator */}
+      {isStreaming && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+          <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />
+          Generating more chunks...
+        </div>
+      )}
+
       {/* Navigation */}
       <div className="flex gap-3">
         <button
@@ -166,72 +281,41 @@ export default function ReadingPage() {
         </button>
         <button
           onClick={goNext}
-          className="flex-1 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          disabled={isWaitingForNext}
+          className="flex-1 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
-          {currentIdx === chunks.length - 1 ? "Finish & Export" : "Next \u2192"}
+          {isWaitingForNext
+            ? "Next chunk generating..."
+            : isSessionEnd
+              ? "Finish & Export"
+              : "Next \u2192"}
         </button>
       </div>
     </div>
   );
 }
 
-function HighlightedContent({
-  content,
-  highlights,
-}: {
-  content: string;
-  highlights: Array<{ text: string; reason: string }>;
-}) {
-  if (!highlights || highlights.length === 0) {
-    return <>{content}</>;
-  }
+/** Inject <mark> tags into content string for highlighted phrases. */
+function injectHighlightMarks(
+  content: string,
+  highlights: Array<{ text: string; reason: string }>
+): string {
+  if (!highlights || highlights.length === 0) return content;
 
-  // Build a highlighted version of the content
   let result = content;
-  const parts: Array<{ text: string; highlighted: boolean }> = [];
 
-  // Sort highlights by their position in the content (longest first to avoid partial matches)
-  const sortedHighlights = [...highlights].sort(
-    (a, b) => b.text.length - a.text.length
-  );
+  // Sort by length descending to match longest phrases first, avoiding partial matches
+  const sorted = [...highlights].sort((a, b) => b.text.length - a.text.length);
 
-  // Create a set of ranges to highlight
-  const ranges: Array<[number, number]> = [];
-  for (const h of sortedHighlights) {
-    const idx = result.indexOf(h.text);
-    if (idx !== -1) {
-      ranges.push([idx, idx + h.text.length]);
-    }
+  for (const h of sorted) {
+    // Escape regex special chars in the highlight text
+    const escaped = h.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // Replace first occurrence only
+    result = result.replace(
+      new RegExp(escaped),
+      `<mark class="highlight">${h.text}</mark>`
+    );
   }
 
-  // Sort ranges by start position
-  ranges.sort((a, b) => a[0] - b[0]);
-
-  // Build parts
-  let cursor = 0;
-  for (const [start, end] of ranges) {
-    if (start < cursor) continue; // Skip overlapping ranges
-    if (start > cursor) {
-      parts.push({ text: result.slice(cursor, start), highlighted: false });
-    }
-    parts.push({ text: result.slice(start, end), highlighted: true });
-    cursor = end;
-  }
-  if (cursor < result.length) {
-    parts.push({ text: result.slice(cursor), highlighted: false });
-  }
-
-  return (
-    <>
-      {parts.map((part, i) =>
-        part.highlighted ? (
-          <mark key={i} className="highlight">
-            {part.text}
-          </mark>
-        ) : (
-          <span key={i}>{part.text}</span>
-        )
-      )}
-    </>
-  );
+  return result;
 }

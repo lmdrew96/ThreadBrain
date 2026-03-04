@@ -36,24 +36,9 @@ export default function MapPage() {
     generateMap();
   }, [sessionId]);
 
-  async function handleStartReading() {
-    // Trigger chunk generation, then navigate to reading view
-    try {
-      setLoading(true);
-      const res = await fetch("/api/ai/chunk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId }),
-      });
-
-      if (!res.ok) throw new Error("Failed to generate chunks");
-
-      router.push(`/read/${sessionId}`);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to prepare reading chunks. Please try again.");
-      setLoading(false);
-    }
+  function handleStartReading() {
+    // Navigate immediately — reading page handles chunk generation
+    router.push(`/read/${sessionId}`);
   }
 
   return (
@@ -90,10 +75,9 @@ export default function MapPage() {
 
           <button
             onClick={handleStartReading}
-            disabled={loading}
-            className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            {loading ? "Preparing chunks..." : "Start Reading"}
+            Start Reading
           </button>
         </div>
       )}

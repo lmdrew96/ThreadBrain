@@ -68,6 +68,27 @@ body {
   letter-spacing: 0.01em;
 }
 
+/* Prose overrides for reading view — warm, breathing typography */
+.reading-content.prose {
+  --tw-prose-body: var(--color-reading-foreground);
+  --tw-prose-headings: var(--color-foreground);
+  --tw-prose-bold: var(--color-foreground);
+  --tw-prose-links: var(--color-primary);
+  --tw-prose-quotes: var(--color-muted-foreground);
+}
+
+.reading-content.prose p {
+  margin-bottom: 1.25em;
+}
+
+.reading-content.prose :first-child {
+  margin-top: 0;
+}
+
+.reading-content.prose :last-child {
+  margin-bottom: 0;
+}
+
 /* Purpose-aware highlights */
 .highlight {
   background-color: var(--color-highlight);

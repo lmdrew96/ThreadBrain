@@ -31,10 +31,8 @@ export interface ChunkHighlight {
   reason: string;
 }
 
-export interface ChunkData {
-  microHeader: string;
-  content: string;
-  highlights: ChunkHighlight[];
-  startOffset: number;
-  endOffset: number;
-}
+// NDJSON stream message types from /api/ai/chunk
+export type ChunkStreamMessage =
+  | { type: "chunk"; chunk: Chunk }
+  | { type: "done"; totalChunks: number }
+  | { type: "error"; message: string };
