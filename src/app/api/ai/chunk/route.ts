@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { readingSessions, documents, chunks } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
-import { callClaudeWithPrefill } from "@/lib/ai/claude";
+import { streamClaudeJsonArray } from "@/lib/ai/claude";
 import {
   CHUNKING_SYSTEM_PROMPT,
   buildChunkingPrompt,
@@ -49,35 +49,6 @@ function splitIntoSegments(text: string): string[] {
   return segments;
 }
 
-/** Parse AI response into chunk objects with recovery for truncated JSON. */
-function parseChunkResponse(raw: string): AIChunk[] {
-  // Strip code fences if present
-  let cleaned = raw
-    .replace(/```json?\n?/g, "")
-    .replace(/```\s*$/g, "")
-    .trim();
-
-  // Direct parse
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    // Try to salvage truncated response
-    const lastBrace = cleaned.lastIndexOf("}");
-    if (lastBrace > 0) {
-      const salvaged = cleaned.slice(0, lastBrace + 1) + "]";
-      try {
-        const result = JSON.parse(salvaged);
-        console.log(`[AI] Salvaged ${result.length} chunks from truncated response`);
-        return result;
-      } catch {
-        // Fall through
-      }
-    }
-
-    console.error("[AI] Failed to parse chunk response:", cleaned.slice(0, 300));
-    throw new Error("AI returned invalid JSON for chunks");
-  }
-}
 
 /** Normalize highlight objects — handle both text/phrase field names. */
 function normalizeHighlights(
@@ -164,41 +135,43 @@ export async function POST(req: NextRequest) {
                 : undefined
             );
 
-            // Use prefill "[" to force valid JSON array start
-            const response = await callClaudeWithPrefill({
-              system: CHUNKING_SYSTEM_PROMPT,
-              user: prompt,
-              prefill: "[",
-              maxTokens: 8192,
-            });
+            // Stream from Claude — each chunk object is emitted as soon as it's complete
+            await streamClaudeJsonArray(
+              {
+                system: CHUNKING_SYSTEM_PROMPT,
+                user: prompt,
+                prefill: "[",
+                maxTokens: 8192,
+              },
+              async (obj) => {
+                const aiChunk = obj as AIChunk;
+                if (!aiChunk.microHeader || !aiChunk.content) return;
 
-            const aiChunks = parseChunkResponse(response);
+                const [inserted] = await db
+                  .insert(chunks)
+                  .values({
+                    sessionId,
+                    documentId: session.documentId,
+                    chunkIndex: globalChunkIndex,
+                    microHeader: aiChunk.microHeader,
+                    content: aiChunk.content,
+                    highlights: normalizeHighlights(aiChunk.highlights),
+                    startOffset: 0,
+                    endOffset: 0,
+                  })
+                  .returning();
 
-            for (const aiChunk of aiChunks) {
-              const [inserted] = await db
-                .insert(chunks)
-                .values({
-                  sessionId,
-                  documentId: session.documentId,
-                  chunkIndex: globalChunkIndex,
-                  microHeader: aiChunk.microHeader,
-                  content: aiChunk.content,
-                  highlights: normalizeHighlights(aiChunk.highlights),
-                  startOffset: 0,
-                  endOffset: 0,
-                })
-                .returning();
+                // Stream chunk to frontend immediately
+                controller.enqueue(
+                  encoder.encode(
+                    JSON.stringify({ type: "chunk", chunk: inserted }) + "\n"
+                  )
+                );
 
-              // Stream chunk to frontend
-              controller.enqueue(
-                encoder.encode(
-                  JSON.stringify({ type: "chunk", chunk: inserted }) + "\n"
-                )
-              );
-
-              previousHeader = aiChunk.microHeader;
-              globalChunkIndex++;
-            }
+                previousHeader = aiChunk.microHeader;
+                globalChunkIndex++;
+              }
+            );
           }
 
           // Signal completion

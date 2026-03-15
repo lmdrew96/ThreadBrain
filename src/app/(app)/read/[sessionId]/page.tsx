@@ -27,7 +27,13 @@ export default function ReadingPage() {
   const [loading, setLoading] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const streamStarted = useRef(false);
+
+  // Prevent hydration mismatch by waiting for client-side render
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     async function loadOrGenerateChunks() {
@@ -148,8 +154,31 @@ export default function ReadingPage() {
     }
   }
 
+  // Keyboard navigation
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Don't capture if user is in an input/textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
+        return;
+
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        goNext();
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        goPrev();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
+
   // Loading skeleton
-  if (loading) {
+  if (!hydrated || loading) {
     return (
       <div className="px-6 py-8 max-w-2xl mx-auto">
         <div className="animate-pulse space-y-4">
@@ -212,6 +241,7 @@ export default function ReadingPage() {
       <div className="flex items-center justify-between mb-2">
         <button
           onClick={() => router.push("/dashboard")}
+          aria-label="Back to library"
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           &larr; Library
@@ -222,7 +252,7 @@ export default function ReadingPage() {
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-muted rounded-full mb-8 overflow-hidden">
+      <div className="h-1 bg-muted rounded-full mb-8 overflow-hidden" role="progressbar" aria-valuenow={currentIdx + 1} aria-valuemin={1} aria-valuemax={chunks.length} aria-label={`Reading progress: chunk ${currentIdx + 1} of ${chunks.length}`}>
         <div
           className="h-full bg-primary rounded-full transition-all duration-300"
           style={{ width: `${progress}%` }}
@@ -275,6 +305,7 @@ export default function ReadingPage() {
         <button
           onClick={goPrev}
           disabled={currentIdx === 0}
+          aria-label="Previous chunk"
           className="flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
         >
           &larr; Previous
@@ -282,6 +313,7 @@ export default function ReadingPage() {
         <button
           onClick={goNext}
           disabled={isWaitingForNext}
+          aria-label={isSessionEnd ? "Finish reading and export" : "Next chunk"}
           className="flex-1 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           {isWaitingForNext

@@ -14,16 +14,17 @@ interface DocumentWithSession extends Document {
 export default function DashboardPage() {
   const [documents, setDocuments] = useState<DocumentWithSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch("/api/documents");
-        if (res.ok) {
-          setDocuments(await res.json());
-        }
+        if (!res.ok) throw new Error("Failed to fetch documents");
+        setDocuments(await res.json());
       } catch (err) {
         console.error(err);
+        setError("Failed to load your documents. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -42,6 +43,39 @@ export default function DashboardPage() {
               <div className="h-4 bg-muted rounded w-1/3" />
             </div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="px-6 py-8 max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Your Library</h1>
+        <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-6 text-center">
+          <p className="text-sm text-destructive mb-4">{error}</p>
+          <button
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetch("/api/documents")
+                .then((res) => {
+                  if (!res.ok) throw new Error("Failed to fetch documents");
+                  return res.json();
+                })
+                .then((data) => setDocuments(data))
+                .catch((err) => {
+                  console.error(err);
+                  setError(
+                    "Failed to load your documents. Please try again."
+                  );
+                })
+                .finally(() => setLoading(false));
+            }}
+            className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -101,6 +135,7 @@ function DocumentCard({ doc }: { doc: DocumentWithSession }) {
   return (
     <button
       onClick={handleClick}
+      aria-label={`Open ${doc.title}`}
       className="w-full text-left rounded-xl border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-card/80"
     >
       <div className="flex items-start justify-between gap-4">

@@ -11,6 +11,7 @@ export default function ExportPage() {
 
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function ExportPage() {
         setSummary(data.summaryMd);
       } catch (err) {
         console.error(err);
+        setError("Failed to generate your reading export. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -41,6 +43,17 @@ export default function ExportPage() {
     await navigator.clipboard.writeText(summary);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleDownload() {
+    if (!summary) return;
+    const blob = new Blob([summary], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "threadbrain-export.md";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -62,6 +75,38 @@ export default function ExportPage() {
         </div>
       )}
 
+      {error && !summary && (
+        <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-6 text-center">
+          <p className="text-sm text-destructive mb-4">{error}</p>
+          <button
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetch("/api/ai/export", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sessionId }),
+              })
+                .then((res) => {
+                  if (!res.ok) throw new Error("Export failed");
+                  return res.json();
+                })
+                .then((data) => setSummary(data.summaryMd))
+                .catch((err) => {
+                  console.error(err);
+                  setError(
+                    "Failed to generate your reading export. Please try again."
+                  );
+                })
+                .finally(() => setLoading(false));
+            }}
+            className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
       {summary && (
         <div className="space-y-6">
           <div className="rounded-xl border bg-card p-6 prose prose-invert prose-sm max-w-none">
@@ -74,6 +119,12 @@ export default function ExportPage() {
               className="flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
             >
               {copied ? "Copied!" : "Copy Markdown"}
+            </button>
+            <button
+              onClick={handleDownload}
+              className="flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
+            >
+              Download .md
             </button>
             <button
               onClick={() => router.push("/dashboard")}

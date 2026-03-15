@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Markdown from "react-markdown";
 
 export default function MapPage() {
   const params = useParams();
@@ -61,16 +62,40 @@ export default function MapPage() {
 
       {error && (
         <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-6 text-center">
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-sm text-destructive mb-4">{error}</p>
+          <button
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetch("/api/ai/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sessionId }),
+              })
+                .then((res) => {
+                  if (!res.ok) throw new Error("Failed to generate map");
+                  return res.json();
+                })
+                .then((data) => setMap(data.map))
+                .catch((err) => {
+                  console.error(err);
+                  setError(
+                    "Failed to generate document map. Please try again."
+                  );
+                })
+                .finally(() => setLoading(false));
+            }}
+            className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            Try Again
+          </button>
         </div>
       )}
 
       {map && (
         <div className="space-y-8">
-          <div className="rounded-xl border bg-card p-6">
-            <p className="text-lg leading-relaxed text-card-foreground">
-              {map}
-            </p>
+          <div className="rounded-xl border bg-card p-6 prose prose-invert prose-lg max-w-none">
+            <Markdown>{map}</Markdown>
           </div>
 
           <button
