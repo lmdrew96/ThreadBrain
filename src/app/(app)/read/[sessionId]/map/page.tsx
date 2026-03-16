@@ -93,7 +93,7 @@ export default function MapPage() {
       )}
 
       {map && (
-        <div className="space-y-8">
+        <div className="space-y-4">
           <div className="rounded-xl border bg-card p-6 prose prose-invert prose-lg max-w-none">
             <Markdown>{map}</Markdown>
           </div>
@@ -103,6 +103,13 @@ export default function MapPage() {
             className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Start Reading
+          </button>
+
+          <button
+            onClick={() => router.push(`/read/${sessionId}/thread`)}
+            className="w-full rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            🧵 View Thread Map — see how the ideas connect
           </button>
         </div>
       )}

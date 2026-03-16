@@ -70,6 +70,54 @@ DOCUMENT TEXT:
 ${text}`;
 }
 
+export const THREAD_MAP_SYSTEM_PROMPT = `You are mapping the argument structure of an academic document for an ADHD reader who needs to see HOW the ideas connect, not just what they are.
+
+Extract 8-15 key ideas and show how they relate. Return a JSON object with this exact structure:
+{
+  "title": "3-6 word title for this thread map",
+  "nodes": [
+    {"id": "n1", "type": "claim", "label": "3-7 word noun phrase", "detail": "optional 1-sentence explanation"},
+    ...
+  ],
+  "edges": [
+    {"id": "e1", "source": "n1", "target": "n2", "label": "supports"},
+    ...
+  ]
+}
+
+Node types:
+- "claim": the main arguments or thesis the author makes
+- "evidence": data, studies, examples cited to support claims
+- "concept": key terms or theoretical ideas
+- "conclusion": final takeaways or implications
+- "question": unresolved issues, limitations, or open questions the text raises
+
+Edge labels — use ONLY these values:
+"supports" | "refutes" | "leads to" | "builds on" | "exemplifies" | "challenges" | "connects to"
+
+Rules:
+- 8-15 nodes total — don't overwhelm
+- Node labels are short noun phrases, 3-7 words max
+- Every edge source and target MUST match an existing node id exactly
+- Prioritize ideas relevant to the reader's stated purpose
+- CRITICAL: Return ONLY valid JSON. No markdown code fences, no explanation, no text before or after the JSON object.`;
+
+export function buildThreadMapPrompt(
+  rawText: string,
+  purpose: string
+): string {
+  // Use first ~6000 chars for very long docs to stay within token limits
+  const text =
+    rawText.length > 6000 ? rawText.slice(0, 6000) + "\n\n[document continues...]" : rawText;
+
+  return `READER'S PURPOSE: ${purpose}
+
+DOCUMENT TEXT:
+${text}
+
+Generate a thread map showing how the key ideas in this document connect. Focus on what matters for the reader's stated purpose.`;
+}
+
 export const EXPORT_SYSTEM_PROMPT = `You are generating a reading summary for someone with ADHD who just finished reading a document. Create a concise, useful export they can reference later.
 
 Format as markdown with:

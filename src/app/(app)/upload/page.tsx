@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type Step = "upload" | "setup";
+type Tab = "pdf" | "paste" | "url";
 
 export default function UploadPage() {
   return (
@@ -17,7 +18,7 @@ function UploadPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>("upload");
-  const [activeTab, setActiveTab] = useState<"pdf" | "paste">("pdf");
+  const [activeTab, setActiveTab] = useState<Tab>("pdf");
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [docTitle, setDocTitle] = useState("");
 
@@ -54,33 +55,24 @@ function UploadPageContent() {
 
           {/* Tab switcher */}
           <div className="flex gap-1 rounded-lg bg-muted p-1 mb-8">
-            <button
-              onClick={() => setActiveTab("pdf")}
-              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === "pdf"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Upload PDF
-            </button>
-            <button
-              onClick={() => setActiveTab("paste")}
-              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === "paste"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Paste Text
-            </button>
+            {(["pdf", "url", "paste"] as Tab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === tab
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab === "pdf" ? "Upload PDF" : tab === "url" ? "Import URL" : "Paste Text"}
+              </button>
+            ))}
           </div>
 
-          {activeTab === "pdf" ? (
-            <PdfUpload onSuccess={handleDocumentCreated} />
-          ) : (
-            <TextPaste onSuccess={handleDocumentCreated} />
-          )}
+          {activeTab === "pdf" && <PdfUpload onSuccess={handleDocumentCreated} />}
+          {activeTab === "url" && <UrlImport onSuccess={handleDocumentCreated} />}
+          {activeTab === "paste" && <TextPaste onSuccess={handleDocumentCreated} />}
         </>
       )}
 
@@ -168,6 +160,73 @@ function PdfUpload({
         className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {uploading ? "Extracting text..." : "Upload PDF"}
+      </button>
+    </div>
+  );
+}
+
+function UrlImport({
+  onSuccess,
+}: {
+  onSuccess: (id: string, title: string) => void;
+}) {
+  const [url, setUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleImport() {
+    if (!url.trim()) return;
+    setImporting(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/documents/import-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import failed");
+
+      onSuccess(data.documentId, data.title);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <label htmlFor="url" className="block text-sm font-medium mb-2">
+          Article or page URL
+        </label>
+        <p className="text-xs text-muted-foreground mb-3">
+          Works best with articles, blog posts, and academic pages. For PDFs, use the Upload tab.
+        </p>
+        <input
+          id="url"
+          type="url"
+          placeholder="https://..."
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleImport()}
+          className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+      </div>
+
+      {error && (
+        <p className="text-sm text-destructive">{error}</p>
+      )}
+
+      <button
+        onClick={handleImport}
+        disabled={!url.trim() || importing}
+        className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {importing ? "Extracting content..." : "Import"}
       </button>
     </div>
   );

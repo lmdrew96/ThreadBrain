@@ -43,6 +43,7 @@ export const readingSessions = pgTable("reading_sessions", {
   status: sessionStatusEnum("status").default("active").notNull(),
   currentChunkIdx: integer("current_chunk_idx").default(0).notNull(),
   mapSummary: text("map_summary"),
+  threadMap: jsonb("thread_map"),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
 });
