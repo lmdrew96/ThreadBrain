@@ -45,7 +45,7 @@ function UploadPageContent() {
   }
 
   return (
-    <div className="px-6 py-8 max-w-2xl mx-auto">
+    <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-2xl mx-auto">
       {step === "upload" && (
         <>
           <h1 className="text-2xl font-bold mb-2">Add a Document</h1>
@@ -128,7 +128,7 @@ function PdfUpload({
 
   return (
     <div className="space-y-6">
-      <label className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border p-12 cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/50">
+      <label className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border p-8 sm:p-12 cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/50">
         <input
           type="file"
           accept=".pdf"
@@ -290,7 +290,7 @@ function TextPaste({
         </label>
         <textarea
           id="text"
-          rows={12}
+          rows={8}
           placeholder="Paste the text you need to read..."
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -410,7 +410,7 @@ function SessionSetup({
                 }`}
               >
                 <span className="block text-lg font-bold">{level}</span>
-                <span className="block text-xs text-muted-foreground mt-0.5">
+                <span className="hidden sm:block text-xs text-muted-foreground mt-0.5">
                   {energyLabels[level]}
                 </span>
               </button>

@@ -180,7 +180,7 @@ export default function ReadingPage() {
   // Loading skeleton
   if (!hydrated || loading) {
     return (
-      <div className="px-6 py-8 max-w-2xl mx-auto">
+      <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-2xl mx-auto">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-muted rounded w-1/3" />
           <div className="h-6 bg-muted rounded w-2/3" />
@@ -193,7 +193,7 @@ export default function ReadingPage() {
   // Waiting for first chunk to arrive
   if (chunks.length === 0 && isStreaming) {
     return (
-      <div className="px-6 py-8 max-w-2xl mx-auto">
+      <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-2xl mx-auto">
         <div className="rounded-xl border bg-card p-8 text-center">
           <div className="animate-pulse space-y-3">
             <div className="h-4 bg-muted rounded w-3/4 mx-auto" />
@@ -211,7 +211,7 @@ export default function ReadingPage() {
   // Error state
   if (streamError && chunks.length === 0) {
     return (
-      <div className="px-6 py-8 max-w-2xl mx-auto">
+      <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-2xl mx-auto">
         <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-6 text-center">
           <p className="text-sm text-destructive mb-4">{streamError}</p>
           <button
@@ -236,7 +236,7 @@ export default function ReadingPage() {
   const isSessionEnd = isOnLastAvailable && !isStreaming;
 
   return (
-    <div className="px-6 py-8 max-w-2xl mx-auto">
+    <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <button
@@ -252,7 +252,7 @@ export default function ReadingPage() {
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-muted rounded-full mb-8 overflow-hidden" role="progressbar" aria-valuenow={currentIdx + 1} aria-valuemin={1} aria-valuemax={chunks.length} aria-label={`Reading progress: chunk ${currentIdx + 1} of ${chunks.length}`}>
+      <div className="h-1.5 sm:h-1 bg-muted rounded-full mb-6 sm:mb-8 overflow-hidden" role="progressbar" aria-valuenow={currentIdx + 1} aria-valuemin={1} aria-valuemax={chunks.length} aria-label={`Reading progress: chunk ${currentIdx + 1} of ${chunks.length}`}>
         <div
           className="h-full bg-primary rounded-full transition-all duration-300"
           style={{ width: `${progress}%` }}
@@ -265,8 +265,8 @@ export default function ReadingPage() {
       </p>
 
       {/* Chunk content with markdown + highlights */}
-      <div className="rounded-xl border bg-card p-6 mb-6">
-        <div className="reading-content prose prose-invert prose-lg max-w-none">
+      <div className="rounded-xl border bg-card p-4 sm:p-6 mb-6">
+        <div className="reading-content prose prose-invert prose-base sm:prose-lg max-w-none">
           <Markdown
             rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}
           >

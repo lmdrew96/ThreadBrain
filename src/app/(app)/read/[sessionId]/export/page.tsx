@@ -57,7 +57,7 @@ export default function ExportPage() {
   }
 
   return (
-    <div className="px-6 py-8 max-w-2xl mx-auto">
+    <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-2xl mx-auto">
       <p className="text-sm text-muted-foreground mb-2">Session Complete</p>
       <h1 className="text-2xl font-bold mb-8">Your Reading Export</h1>
 
@@ -113,7 +113,7 @@ export default function ExportPage() {
             <Markdown>{summary}</Markdown>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleCopy}
               className="flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"

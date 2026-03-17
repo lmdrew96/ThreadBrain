@@ -10,16 +10,17 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 glass border-b">
-      <div className="flex h-14 items-center justify-between px-6">
+      <div className="flex h-14 items-center justify-between px-4 sm:px-6">
         <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
           Thread<span className="text-primary">Brain</span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href="/upload"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-3 sm:px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            + New Read
+            <span className="sm:hidden">+</span>
+            <span className="hidden sm:inline">+ New Read</span>
           </Link>
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

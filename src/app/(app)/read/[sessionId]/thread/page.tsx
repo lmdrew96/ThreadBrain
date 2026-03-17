@@ -284,18 +284,18 @@ export default function ThreadPage() {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100vh - 56px)" }}>
+    <div className="flex flex-col" style={{ height: "calc(100dvh - 56px)" }}>
       {/* Header bar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b glass shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b glass shrink-0 gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             onClick={() => router.back()}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
             ← Back
           </button>
-          <span className="text-muted-foreground">·</span>
-          <span className="text-sm font-medium">
+          <span className="text-muted-foreground shrink-0">·</span>
+          <span className="text-sm font-medium truncate">
             {threadMap ? threadMap.title : "Thread Map"}
           </span>
         </div>
@@ -318,7 +318,7 @@ export default function ThreadPage() {
         )}
 
         {threadMap && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={() => {
                 if (regenState === "idle") {
@@ -329,19 +329,21 @@ export default function ThreadPage() {
               }}
               onMouseLeave={() => setRegenState("idle")}
               disabled={loading}
-              className={`text-sm rounded-md border px-3 py-1.5 font-medium transition-colors disabled:opacity-50 ${
+              className={`text-sm rounded-md border px-2 sm:px-3 py-1.5 font-medium transition-colors disabled:opacity-50 ${
                 regenState === "confirm"
                   ? "border-destructive/50 bg-destructive/10 text-destructive"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
-              {regenState === "confirm" ? "Sure? Regenerate" : "↺ Regenerate"}
+              <span className="hidden sm:inline">{regenState === "confirm" ? "Sure? Regenerate" : "↺ Regenerate"}</span>
+              <span className="sm:hidden">{regenState === "confirm" ? "Sure?" : "↺"}</span>
             </button>
             <button
               onClick={() => router.push(`/read/${sessionId}`)}
-              className="text-sm rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              className="text-sm rounded-md bg-primary px-2 sm:px-3 py-1.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              Continue Reading →
+              <span className="hidden sm:inline">Continue Reading →</span>
+              <span className="sm:hidden">Read →</span>
             </button>
           </div>
         )}

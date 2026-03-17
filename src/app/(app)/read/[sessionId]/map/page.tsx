@@ -43,7 +43,7 @@ export default function MapPage() {
   }
 
   return (
-    <div className="px-6 py-8 max-w-2xl mx-auto">
+    <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-2xl mx-auto">
       <p className="text-sm text-muted-foreground mb-2">The Map</p>
       <h1 className="text-2xl font-bold mb-8">Before you dive in...</h1>
 
@@ -94,7 +94,7 @@ export default function MapPage() {
 
       {map && (
         <div className="space-y-4">
-          <div className="rounded-xl border bg-card p-6 prose prose-lg max-w-none prose-map">
+          <div className="rounded-xl border bg-card p-4 sm:p-6 prose prose-base sm:prose-lg max-w-none prose-map">
             <Markdown>{map}</Markdown>
           </div>
 

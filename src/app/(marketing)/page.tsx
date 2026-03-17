@@ -32,7 +32,7 @@ export default function LandingPage() {
       />
 
       {/* Nav */}
-      <nav className="absolute top-0 left-0 right-0 flex items-center justify-between px-8 py-6 z-10">
+      <nav className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 sm:px-8 py-6 z-10">
         <span className="text-lg font-semibold tracking-tight">
           Thread<span className="text-primary">Brain</span>
         </span>
@@ -55,7 +55,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero glass panel */}
-      <div className="relative z-10 glass rounded-2xl px-10 py-14 max-w-xl w-full text-center space-y-7 animate-fade-up">
+      <div className="relative z-10 glass rounded-2xl px-6 sm:px-10 py-10 sm:py-14 max-w-xl w-full text-center space-y-7 animate-fade-up">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border border-primary/25 text-primary bg-primary/5">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -64,7 +64,7 @@ export default function LandingPage() {
 
         {/* Title */}
         <div className="space-y-3">
-          <h1 className="text-6xl font-bold tracking-tight leading-none">
+          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight leading-none">
             Thread<span className="text-primary">Brain</span>
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed">
@@ -84,7 +84,7 @@ export default function LandingPage() {
         </p>
 
         {/* CTAs */}
-        <div className="flex gap-3 justify-center pt-1">
+        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-1">
           <SignedOut>
             <Link
               href="/sign-up"
@@ -111,7 +111,7 @@ export default function LandingPage() {
       </div>
 
       {/* Feature strip */}
-      <div className="relative z-10 mt-8 grid grid-cols-3 gap-3 max-w-xl w-full animate-fade-up-d3">
+      <div className="relative z-10 mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl w-full animate-fade-up-d3">
         {[
           {
             icon: "🧭",

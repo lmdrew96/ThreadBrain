@@ -305,9 +305,9 @@ function ShelfButton({
         <span
           role="button"
           onClick={handleDelete}
-          className={`hidden group-hover:inline-flex items-center justify-center w-5 h-5 rounded transition-colors ${
+          className={`inline-flex items-center justify-center w-5 h-5 rounded transition-colors opacity-0 group-hover:opacity-100 ${
             confirming
-              ? "text-destructive"
+              ? "text-destructive opacity-100"
               : "text-muted-foreground hover:text-destructive"
           }`}
           title={confirming ? "Click again to delete" : "Delete shelf"}
@@ -482,110 +482,112 @@ function DocumentCard({
 
   return (
     <div
-      className="group relative rounded-xl border bg-card transition-colors hover:border-primary/30"
+      className="group rounded-xl border bg-card transition-colors hover:border-primary/30"
       onMouseLeave={() => setDeleteState("idle")}
     >
-      {/* Clickable reading area */}
-      <button
-        onClick={handleCardClick}
-        aria-label={`Open ${doc.title}`}
-        className="w-full text-left p-5 pr-24"
-      >
-        <div className="flex items-start gap-2">
-          <span className="text-sm mt-0.5 shrink-0">
-            {doc.sourceType === "pdf" ? "📄" : doc.sourceType === "url" ? "🔗" : "📝"}
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="font-semibold truncate">{doc.title}</h2>
+      <div className="flex items-center">
+        {/* Clickable reading area */}
+        <button
+          onClick={handleCardClick}
+          aria-label={`Open ${doc.title}`}
+          className="flex-1 text-left p-4 sm:p-5 min-w-0"
+        >
+          <div className="flex items-start gap-2">
+            <span className="text-sm mt-0.5 shrink-0">
+              {doc.sourceType === "pdf" ? "📄" : doc.sourceType === "url" ? "🔗" : "📝"}
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-semibold truncate">{doc.title}</h2>
 
-            {session ? (
-              <SessionStatus session={session} />
-            ) : (
-              <p className="text-sm text-muted-foreground mt-0.5">
-                No session yet ·{" "}
-                <span className="text-primary">Start Reading</span>
-              </p>
-            )}
-
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-xs text-muted-foreground">
-                {doc.wordCount.toLocaleString()} words
-              </span>
-              {currentShelf && (
-                <span className="text-xs text-muted-foreground">
-                  · {currentShelf.emoji} {currentShelf.name}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </button>
-
-      {/* Action buttons — right side */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-        {/* Shelf picker */}
-        <div className="relative" ref={shelfRef}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShelfOpen((o) => !o);
-            }}
-            className="flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title="Assign to shelf"
-          >
-            <BookMarked className="w-3.5 h-3.5" />
-            <ChevronDown className="w-3 h-3" />
-          </button>
-
-          {shelfOpen && (
-            <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg border bg-card shadow-lg py-1 text-sm">
-              <button
-                onClick={() => handleAssignShelf(null)}
-                className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-muted transition-colors text-left"
-              >
-                <span className="text-muted-foreground">No shelf</span>
-                {!doc.shelfId && <Check className="w-3.5 h-3.5 text-primary" />}
-              </button>
-              {shelves.length > 0 && (
-                <div className="border-t my-1" />
-              )}
-              {shelves.map((shelf) => (
-                <button
-                  key={shelf.id}
-                  onClick={() => handleAssignShelf(shelf.id)}
-                  className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-muted transition-colors text-left"
-                >
-                  <span>
-                    {shelf.emoji} {shelf.name}
-                  </span>
-                  {doc.shelfId === shelf.id && (
-                    <Check className="w-3.5 h-3.5 text-primary" />
-                  )}
-                </button>
-              ))}
-              {shelves.length === 0 && (
-                <p className="px-3 py-2 text-xs text-muted-foreground">
-                  No shelves yet — create one in the sidebar.
+              {session ? (
+                <SessionStatus session={session} />
+              ) : (
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  No session yet ·{" "}
+                  <span className="text-primary">Start Reading</span>
                 </p>
               )}
-            </div>
-          )}
-        </div>
 
-        {/* Delete */}
-        <button
-          onClick={handleDelete}
-          disabled={deleteState === "deleting"}
-          className={`flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${
-            deleteState === "confirm"
-              ? "border-destructive/50 bg-destructive/10 text-destructive"
-              : "text-muted-foreground hover:border-destructive/40 hover:text-destructive"
-          }`}
-          title={deleteState === "confirm" ? "Click again to confirm" : "Delete"}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          {deleteState === "confirm" && <span>Sure?</span>}
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="text-xs text-muted-foreground">
+                  {doc.wordCount.toLocaleString()} words
+                </span>
+                {currentShelf && (
+                  <span className="text-xs text-muted-foreground">
+                    · {currentShelf.emoji} {currentShelf.name}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         </button>
+
+        {/* Action buttons — always visible on mobile, hover-only on desktop */}
+        <div className="flex items-center gap-1 px-3 sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity shrink-0">
+          {/* Shelf picker */}
+          <div className="relative" ref={shelfRef}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShelfOpen((o) => !o);
+              }}
+              className="flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Assign to shelf"
+            >
+              <BookMarked className="w-3.5 h-3.5" />
+              <ChevronDown className="w-3 h-3" />
+            </button>
+
+            {shelfOpen && (
+              <div className="absolute right-0 top-full mt-1 z-20 w-44 max-w-[calc(100vw-2rem)] rounded-lg border bg-card shadow-lg py-1 text-sm">
+                <button
+                  onClick={() => handleAssignShelf(null)}
+                  className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-muted transition-colors text-left"
+                >
+                  <span className="text-muted-foreground">No shelf</span>
+                  {!doc.shelfId && <Check className="w-3.5 h-3.5 text-primary" />}
+                </button>
+                {shelves.length > 0 && (
+                  <div className="border-t my-1" />
+                )}
+                {shelves.map((shelf) => (
+                  <button
+                    key={shelf.id}
+                    onClick={() => handleAssignShelf(shelf.id)}
+                    className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-muted transition-colors text-left"
+                  >
+                    <span>
+                      {shelf.emoji} {shelf.name}
+                    </span>
+                    {doc.shelfId === shelf.id && (
+                      <Check className="w-3.5 h-3.5 text-primary" />
+                    )}
+                  </button>
+                ))}
+                {shelves.length === 0 && (
+                  <p className="px-3 py-2 text-xs text-muted-foreground">
+                    No shelves yet — create one in the sidebar.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Delete */}
+          <button
+            onClick={handleDelete}
+            disabled={deleteState === "deleting"}
+            className={`flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${
+              deleteState === "confirm"
+                ? "border-destructive/50 bg-destructive/10 text-destructive"
+                : "text-muted-foreground hover:border-destructive/40 hover:text-destructive"
+            }`}
+            title={deleteState === "confirm" ? "Click again to confirm" : "Delete"}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            {deleteState === "confirm" && <span className="hidden sm:inline">Sure?</span>}
+          </button>
+        </div>
       </div>
     </div>
   );
