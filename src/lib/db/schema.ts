@@ -92,6 +92,14 @@ export const checkIns = pgTable("check_ins", {
   respondedAt: timestamp("responded_at"),
 });
 
+// User settings — per-user configuration (integrations, preferences)
+export const userSettings = pgTable("user_settings", {
+  userId: text("user_id").primaryKey(),
+  rjUrl: text("rj_url"),
+  rjApiKey: text("rj_api_key"), // AES-256-GCM encrypted
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Exports — generated summaries from completed sessions
 export const exports = pgTable("exports", {
   id: uuid("id").defaultRandom().primaryKey(),

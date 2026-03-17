@@ -1,7 +1,9 @@
 "use client";
 
-import { Moon, Sun, Type, SlidersHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Moon, Sun, Type, SlidersHorizontal, BookOpen, Eye, EyeOff } from "lucide-react";
 import { useTheme, type AppFont } from "@/lib/theme-context";
+import { toast } from "@/hooks/use-toast";
 
 interface FontOption {
   id: AppFont;
@@ -156,6 +158,9 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* ── Connections ────────────────────────────────────────────────── */}
+      <JournalConnectionSection />
+
       {/* ── Chunk sizes ────────────────────────────────────────────────── */}
       <section className="space-y-4 animate-fade-up-d3">
         <SectionHeader
@@ -214,6 +219,137 @@ export default function SettingsPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+// ─── Research Journal connection ───────────────────────────────────────────
+
+function JournalConnectionSection() {
+  const [rjUrl, setRjUrl] = useState("");
+  const [rjApiKey, setRjApiKey] = useState("");
+  const [keySet, setKeySet] = useState(false);
+  const [showKey, setShowKey] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/user/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        setRjUrl(d.rjUrl ?? "");
+        setKeySet(d.rjApiKeySet ?? false);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const body: Record<string, string> = { rjUrl };
+      if (rjApiKey) body.rjApiKey = rjApiKey;
+
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      if (rjApiKey) setKeySet(true);
+      setRjApiKey("");
+      setShowKey(false);
+      toast("Research Journal connected ✓");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to save", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const connected = !!rjUrl && keySet;
+
+  return (
+    <section className="space-y-4">
+      <SectionHeader
+        icon={<BookOpen className="w-3.5 h-3.5" />}
+        label="Connections"
+        description="Connect external tools to save highlights and excerpts."
+      />
+
+      <div className="glass-card p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">Research Journal</p>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Save highlights directly to your research library
+            </p>
+          </div>
+          {!loading && (
+            <span
+              className={`text-xs font-medium px-2 py-1 rounded-full ${
+                connected
+                  ? "bg-emerald-500/10 text-emerald-500"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {connected ? "Connected" : "Not connected"}
+            </span>
+          )}
+        </div>
+
+        {!loading && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Research Journal URL
+              </label>
+              <input
+                type="url"
+                value={rjUrl}
+                onChange={(e) => setRjUrl(e.target.value)}
+                placeholder="https://your-rj-domain.com"
+                className="w-full rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                API Key{keySet && !rjApiKey && (
+                  <span className="ml-2 text-emerald-500">● saved</span>
+                )}
+              </label>
+              <div className="relative">
+                <input
+                  type={showKey ? "text" : "password"}
+                  value={rjApiKey}
+                  onChange={(e) => setRjApiKey(e.target.value)}
+                  placeholder={keySet ? "Enter new key to replace" : "Paste your API key"}
+                  className="w-full rounded-lg border bg-background px-3 py-2 pr-10 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey((v) => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSave}
+              disabled={saving || (!rjUrl && !rjApiKey)}
+              className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : connected ? "Update Connection" : "Save Connection"}
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 

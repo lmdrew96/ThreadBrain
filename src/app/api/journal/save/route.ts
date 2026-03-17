@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { readingSessions, documents, chunks } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
+import { getUserJournalConfig } from "@/lib/journal";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -10,11 +11,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rjUrl = process.env.RESEARCH_JOURNAL_URL;
-  const rjKey = process.env.RESEARCH_JOURNAL_API_KEY;
-  if (!rjUrl || !rjKey) {
+  // Fetch per-user Research Journal config (decrypted)
+  const config = await getUserJournalConfig(userId);
+  if (!config) {
     return NextResponse.json(
-      { error: "Research Journal is not configured on this server" },
+      { error: "Connect Research Journal in Settings first" },
       { status: 503 }
     );
   }
@@ -76,11 +77,11 @@ export async function POST(req: NextRequest) {
   // Forward each excerpt to Research Journal
   const results = await Promise.allSettled(
     excerpts.map((e) =>
-      fetch(`${rjUrl}/api/excerpts`, {
+      fetch(`${config.rjUrl}/api/excerpts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${rjKey}`,
+          Authorization: `Bearer ${config.rjApiKey}`,
         },
         body: JSON.stringify({
           quote: e.quote,
@@ -98,11 +99,13 @@ export async function POST(req: NextRequest) {
   ).length;
   const failed = results.length - saved;
 
-  console.log(`Journal save: ${saved}/${results.length} excerpts saved for session ${sessionId}`);
+  console.log(
+    `Journal save: ${saved}/${results.length} excerpts for session ${sessionId}`
+  );
 
   if (saved === 0) {
     return NextResponse.json(
-      { error: "All saves failed — Research Journal may be unavailable" },
+      { error: "All saves failed — check your Research Journal connection in Settings" },
       { status: 502 }
     );
   }

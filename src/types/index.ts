@@ -6,6 +6,7 @@ import type {
   checkIns,
   exports,
   shelves,
+  userSettings,
 } from "@/lib/db/schema";
 
 // Inferred types from Drizzle schema
@@ -15,6 +16,7 @@ export type Shelf = InferSelectModel<typeof shelves>;
 export type Chunk = InferSelectModel<typeof chunks>;
 export type CheckIn = InferSelectModel<typeof checkIns>;
 export type Export = InferSelectModel<typeof exports>;
+export type UserSettings = InferSelectModel<typeof userSettings>;
 
 // Thread Map types
 export interface ThreadNode {
