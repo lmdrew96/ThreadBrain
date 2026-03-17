@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ReactFlow,
@@ -16,6 +16,7 @@ import {
   MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import dagre from "@dagrejs/dagre";
 import type { ThreadMap, ThreadNode as TNode } from "@/types";
 
 // ─── Node styles by type ───────────────────────────────────────────────────
@@ -125,39 +126,34 @@ function ThreadNode({ data }: { data: { label: string; type: TNode["type"]; deta
 
 const nodeTypes = { threadNode: ThreadNode };
 
-// ─── Layout: arrange by type in horizontal bands ──────────────────────────
+// ─── Dagre layout ──────────────────────────────────────────────────────────
 
-const TYPE_ROW: Record<TNode["type"], number> = {
-  claim: 0,
-  concept: 1,
-  evidence: 2,
-  conclusion: 3,
-  question: 4,
-};
+const NODE_W = 220;
+const NODE_H = 120;
 
-function layoutNodes(nodes: TNode[]): Node[] {
-  const rows: Record<number, TNode[]> = {};
-  for (const n of nodes) {
-    const row = TYPE_ROW[n.type] ?? 2;
-    (rows[row] ??= []).push(n);
+function dagreLayout(tnodes: TNode[], tedges: ThreadMap["edges"]): Node[] {
+  const g = new dagre.graphlib.Graph();
+  g.setDefaultEdgeLabel(() => ({}));
+  g.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 80, marginx: 40, marginy: 40 });
+
+  for (const n of tnodes) {
+    g.setNode(n.id, { width: NODE_W, height: NODE_H });
+  }
+  for (const e of tedges) {
+    g.setEdge(e.source, e.target);
   }
 
-  const NODE_W = 300;
-  const NODE_H = 160;
-  const ROW_GAP = 260;
+  dagre.layout(g);
 
-  return nodes.map((n) => {
-    const row = TYPE_ROW[n.type] ?? 2;
-    const rowNodes = rows[row];
-    const idx = rowNodes.indexOf(n);
-    const total = rowNodes.length;
-    const x = (idx - (total - 1) / 2) * NODE_W;
-    const y = row * ROW_GAP;
-
+  return tnodes.map((n) => {
+    const pos = g.node(n.id);
     return {
       id: n.id,
       type: "threadNode",
-      position: { x, y },
+      position: {
+        x: pos.x - NODE_W / 2,
+        y: pos.y - NODE_H / 2,
+      },
       data: { label: n.label, type: n.type, detail: n.detail },
     };
   });
@@ -169,13 +165,32 @@ function buildEdges(edges: ThreadMap["edges"]): Edge[] {
     source: e.source,
     target: e.target,
     label: e.label,
-    labelStyle: { fontSize: 10, fill: "#7a8699" },
-    labelBgStyle: { fill: "rgba(5,8,15,0.8)" },
+    labelStyle: { fontSize: 10, fill: "var(--color-muted-foreground)" },
+    labelBgStyle: { fill: "var(--color-background)", fillOpacity: 0.85 },
     labelBgPadding: [4, 3] as [number, number],
     style: { stroke: "var(--color-border)", strokeWidth: 1.5 },
     markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-muted-foreground)" },
     animated: e.label === "supports" || e.label === "leads to",
   }));
+}
+
+// ─── localStorage position persistence ────────────────────────────────────
+
+function loadSavedPositions(sessionId: string): Record<string, { x: number; y: number }> {
+  try {
+    const raw = localStorage.getItem(`tb-thread-pos-${sessionId}`);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePositions(sessionId: string, nodes: Node[]) {
+  const positions: Record<string, { x: number; y: number }> = {};
+  for (const n of nodes) {
+    positions[n.id] = n.position;
+  }
+  localStorage.setItem(`tb-thread-pos-${sessionId}`, JSON.stringify(positions));
 }
 
 // ─── Main page ─────────────────────────────────────────────────────────────
@@ -192,11 +207,32 @@ export default function ThreadPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-  const applyMap = useCallback((map: ThreadMap) => {
-    setThreadMap(map);
-    setNodes(layoutNodes(map.nodes));
-    setEdges(buildEdges(map.edges));
-  }, [setNodes, setEdges]);
+  // Debounce ref for saving positions
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const applyMap = useCallback(
+    (map: ThreadMap, force = false) => {
+      setThreadMap(map);
+
+      const laid = dagreLayout(map.nodes, map.edges);
+
+      // Overlay saved positions unless this is a forced regeneration
+      if (!force) {
+        const saved = loadSavedPositions(sessionId);
+        const withSaved = laid.map((n) =>
+          saved[n.id] ? { ...n, position: saved[n.id] } : n
+        );
+        setNodes(withSaved);
+      } else {
+        // Clear stale saved positions when regenerating
+        localStorage.removeItem(`tb-thread-pos-${sessionId}`);
+        setNodes(laid);
+      }
+
+      setEdges(buildEdges(map.edges));
+    },
+    [sessionId, setNodes, setEdges]
+  );
 
   // On mount, check if the session already has a cached thread map
   useEffect(() => {
@@ -215,6 +251,18 @@ export default function ThreadPage() {
     checkCache();
   }, [sessionId, applyMap]);
 
+  // Save positions whenever nodes change (debounced 500ms)
+  useEffect(() => {
+    if (!threadMap || nodes.length === 0) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      savePositions(sessionId, nodes);
+    }, 500);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [nodes, threadMap, sessionId]);
+
   async function generate(force = false) {
     setLoading(true);
     setError(null);
@@ -227,7 +275,7 @@ export default function ThreadPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Generation failed");
-      applyMap(data.threadMap as ThreadMap);
+      applyMap(data.threadMap as ThreadMap, force);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate thread map");
     } finally {
