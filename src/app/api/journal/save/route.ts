@@ -73,11 +73,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No excerpts to save" }, { status: 400 });
   }
 
-  const source = {
-    title: document.title,
-    ...(document.sourceUrl ? { url: document.sourceUrl } : {}),
-  };
-
   // Forward each excerpt to Research Journal
   const results = await Promise.allSettled(
     excerpts.map((e) =>
@@ -87,7 +82,13 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${rjKey}`,
         },
-        body: JSON.stringify({ quote: e.quote, comment: e.comment, source }),
+        body: JSON.stringify({
+          quote: e.quote,
+          comment: e.comment,
+          articleTitle: document.title,
+          articleUrl: document.sourceUrl ?? undefined,
+          source: "threadbrain" as const,
+        }),
       })
     )
   );
