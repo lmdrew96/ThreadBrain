@@ -188,6 +188,7 @@ export default function ThreadPage() {
   const [threadMap, setThreadMap] = useState<ThreadMap | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [regenState, setRegenState] = useState<"idle" | "confirm">("idle");
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
@@ -214,14 +215,15 @@ export default function ThreadPage() {
     checkCache();
   }, [sessionId, applyMap]);
 
-  async function generate() {
+  async function generate(force = false) {
     setLoading(true);
     setError(null);
+    setRegenState("idle");
     try {
       const res = await fetch("/api/ai/thread", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId }),
+        body: JSON.stringify({ sessionId, force }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Generation failed");
@@ -268,12 +270,32 @@ export default function ThreadPage() {
         )}
 
         {threadMap && (
-          <button
-            onClick={() => router.push(`/read/${sessionId}`)}
-            className="text-sm rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Continue Reading →
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (regenState === "idle") {
+                  setRegenState("confirm");
+                } else {
+                  generate(true);
+                }
+              }}
+              onMouseLeave={() => setRegenState("idle")}
+              disabled={loading}
+              className={`text-sm rounded-md border px-3 py-1.5 font-medium transition-colors disabled:opacity-50 ${
+                regenState === "confirm"
+                  ? "border-destructive/50 bg-destructive/10 text-destructive"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              }`}
+            >
+              {regenState === "confirm" ? "Sure? Regenerate" : "↺ Regenerate"}
+            </button>
+            <button
+              onClick={() => router.push(`/read/${sessionId}`)}
+              className="text-sm rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Continue Reading →
+            </button>
+          </div>
         )}
       </div>
 
@@ -291,7 +313,7 @@ export default function ThreadPage() {
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <button
-              onClick={generate}
+              onClick={() => generate()}
               className="rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Generate Thread Map

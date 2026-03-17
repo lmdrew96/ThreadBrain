@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { sessionId } = await req.json();
+  const { sessionId, force = false } = await req.json();
   if (!sessionId) {
     return NextResponse.json({ error: "sessionId required" }, { status: 400 });
   }
@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  // Return cached thread map if it exists
-  if (session.threadMap) {
+  // Return cached thread map if it exists (unless force regeneration)
+  if (session.threadMap && !force) {
     return NextResponse.json({ threadMap: session.threadMap });
   }
 
