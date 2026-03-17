@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import { Bookmark } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import type { Chunk } from "@/types";
 
 // Allow <mark> tags through sanitizer for highlights
@@ -154,6 +156,24 @@ export default function ReadingPage() {
     }
   }
 
+  async function saveHighlight(highlight: { text: string; reason: string }) {
+    try {
+      const res = await fetch("/api/journal/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          excerpts: [{ quote: highlight.text, comment: highlight.reason }],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast("Saved to Research Journal ✓");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn't save — try again", "error");
+    }
+  }
+
   // Keyboard navigation
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -281,12 +301,19 @@ export default function ReadingPage() {
           {chunk.highlights.map((h, i) => (
             <div
               key={i}
-              className="flex gap-3 text-sm text-muted-foreground"
+              className="flex items-start gap-3 text-sm text-muted-foreground group/highlight"
             >
-              <span className="shrink-0 text-accent">&#9679;</span>
-              <span>
+              <span className="shrink-0 text-accent mt-0.5">&#9679;</span>
+              <span className="flex-1">
                 &ldquo;{h.text}&rdquo; &mdash; {h.reason}
               </span>
+              <button
+                onClick={() => saveHighlight(h)}
+                title="Save to Research Journal"
+                className="shrink-0 opacity-0 group-hover/highlight:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-primary"
+              >
+                <Bookmark className="w-3.5 h-3.5" />
+              </button>
             </div>
           ))}
         </div>

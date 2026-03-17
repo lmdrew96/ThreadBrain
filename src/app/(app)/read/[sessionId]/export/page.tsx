@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Markdown from "react-markdown";
+import { toast } from "@/hooks/use-toast";
 
 export default function ExportPage() {
   const params = useParams();
@@ -13,6 +14,7 @@ export default function ExportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [savingToJournal, setSavingToJournal] = useState(false);
 
   useEffect(() => {
     async function generateExport() {
@@ -43,6 +45,28 @@ export default function ExportPage() {
     await navigator.clipboard.writeText(summary);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleSaveToJournal() {
+    setSavingToJournal(true);
+    try {
+      const res = await fetch("/api/journal/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast(
+        data.failed > 0
+          ? `Saved ${data.saved} of ${data.total} excerpts to Research Journal`
+          : `${data.saved} excerpt${data.saved !== 1 ? "s" : ""} saved to Research Journal ✓`
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn't save — try again", "error");
+    } finally {
+      setSavingToJournal(false);
+    }
   }
 
   function handleDownload() {
@@ -133,6 +157,15 @@ export default function ExportPage() {
               Back to Library
             </button>
           </div>
+
+          <button
+            onClick={handleSaveToJournal}
+            disabled={savingToJournal}
+            className="w-full rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <span>🔖</span>
+            {savingToJournal ? "Saving to Research Journal..." : "Save all to Research Journal"}
+          </button>
         </div>
       )}
     </div>
