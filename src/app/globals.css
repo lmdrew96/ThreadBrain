@@ -202,6 +202,19 @@ body {
   animation: fade-up 0.55s ease 0.38s both;
 }
 
+/* ─── Map prose — theme-aware ────────────────────────────────────────────── */
+
+.prose-map {
+  --tw-prose-body: var(--color-foreground);
+  --tw-prose-headings: var(--color-foreground);
+  --tw-prose-bold: var(--color-foreground);
+  --tw-prose-links: var(--color-primary);
+  --tw-prose-quotes: var(--color-muted-foreground);
+  --tw-prose-counters: var(--color-muted-foreground);
+  --tw-prose-bullets: var(--color-muted-foreground);
+  --tw-prose-code: var(--color-foreground);
+}
+
 /* ─── Reading content ────────────────────────────────────────────────────── */
 
 .reading-content {

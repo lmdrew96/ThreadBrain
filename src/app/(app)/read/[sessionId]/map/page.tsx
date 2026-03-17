@@ -94,7 +94,7 @@ export default function MapPage() {
 
       {map && (
         <div className="space-y-4">
-          <div className="rounded-xl border bg-card p-6 prose prose-invert prose-lg max-w-none">
+          <div className="rounded-xl border bg-card p-6 prose prose-lg max-w-none prose-map">
             <Markdown>{map}</Markdown>
           </div>
 
