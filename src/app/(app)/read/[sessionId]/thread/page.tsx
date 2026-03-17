@@ -25,33 +25,33 @@ const TYPE_META: Record<
   { color: string; bg: string; border: string; emoji: string }
 > = {
   claim: {
-    color: "#fbbf24",
-    bg: "rgba(251,191,36,0.1)",
-    border: "rgba(251,191,36,0.4)",
+    color: "#d97706",
+    bg: "rgba(217,119,6,0.12)",
+    border: "rgba(217,119,6,0.5)",
     emoji: "💬",
   },
   evidence: {
-    color: "#60a5fa",
-    bg: "rgba(96,165,250,0.1)",
-    border: "rgba(96,165,250,0.4)",
+    color: "#3b82f6",
+    bg: "rgba(59,130,246,0.12)",
+    border: "rgba(59,130,246,0.5)",
     emoji: "📊",
   },
   concept: {
-    color: "#a78bfa",
-    bg: "rgba(167,139,250,0.1)",
-    border: "rgba(167,139,250,0.4)",
+    color: "#8b5cf6",
+    bg: "rgba(139,92,246,0.12)",
+    border: "rgba(139,92,246,0.5)",
     emoji: "💡",
   },
   conclusion: {
-    color: "#34d399",
-    bg: "rgba(52,211,153,0.1)",
-    border: "rgba(52,211,153,0.4)",
+    color: "#10b981",
+    bg: "rgba(16,185,129,0.12)",
+    border: "rgba(16,185,129,0.5)",
     emoji: "✅",
   },
   question: {
-    color: "#fb923c",
-    bg: "rgba(251,146,60,0.1)",
-    border: "rgba(251,146,60,0.4)",
+    color: "#f97316",
+    bg: "rgba(249,115,22,0.12)",
+    border: "rgba(249,115,22,0.5)",
     emoji: "❓",
   },
 };
@@ -96,7 +96,7 @@ function ThreadNode({ data }: { data: { label: string; type: TNode["type"]; deta
         style={{
           fontSize: "13px",
           fontWeight: 500,
-          color: "#f0ede6",
+          color: "var(--color-foreground)",
           lineHeight: 1.35,
         }}
       >
@@ -106,7 +106,7 @@ function ThreadNode({ data }: { data: { label: string; type: TNode["type"]; deta
         <div
           style={{
             fontSize: "11px",
-            color: "#7a8699",
+            color: "var(--color-muted-foreground)",
             marginTop: "5px",
             lineHeight: 1.4,
           }}
@@ -142,9 +142,9 @@ function layoutNodes(nodes: TNode[]): Node[] {
     (rows[row] ??= []).push(n);
   }
 
-  const NODE_W = 220;
+  const NODE_W = 300;
   const NODE_H = 160;
-  const ROW_GAP = 180;
+  const ROW_GAP = 260;
 
   return nodes.map((n) => {
     const row = TYPE_ROW[n.type] ?? 2;
@@ -172,8 +172,8 @@ function buildEdges(edges: ThreadMap["edges"]): Edge[] {
     labelStyle: { fontSize: 10, fill: "#7a8699" },
     labelBgStyle: { fill: "rgba(5,8,15,0.8)" },
     labelBgPadding: [4, 3] as [number, number],
-    style: { stroke: "#1b2438", strokeWidth: 1.5 },
-    markerEnd: { type: MarkerType.ArrowClosed, color: "#1b2438" },
+    style: { stroke: "var(--color-border)", strokeWidth: 1.5 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-muted-foreground)" },
     animated: e.label === "supports" || e.label === "leads to",
   }));
 }
