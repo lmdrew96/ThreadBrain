@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
+      max_tokens: 4096,
       system: THREAD_MAP_SYSTEM_PROMPT,
       messages: [
         {
@@ -61,18 +61,21 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    const text =
+    const raw =
       response.content[0].type === "text" ? response.content[0].text : "";
 
     console.log(
       `Thread map generated in ${Date.now() - start}ms, ${response.usage.input_tokens}→${response.usage.output_tokens} tokens`
     );
 
+    // Strip markdown code fences if the model wrapped the JSON anyway
+    const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
     let threadMap: ThreadMap;
     try {
       threadMap = JSON.parse(text);
     } catch {
-      console.error("Thread map JSON parse failed:", text.slice(0, 200));
+      console.error("Thread map JSON parse failed:", text.slice(0, 300));
       return NextResponse.json(
         { error: "Failed to parse thread map from AI response" },
         { status: 500 }
