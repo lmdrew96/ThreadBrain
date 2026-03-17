@@ -17,10 +17,22 @@ export const sessionStatusEnum = pgEnum("session_status", [
   "completed",
 ]);
 
+// Shelves — user-defined collections for organizing documents
+export const shelves = pgTable("shelves", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  emoji: text("emoji").default("📚").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Documents — the source material a user uploads or pastes
 export const documents = pgTable("documents", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id").notNull(),
+  shelfId: uuid("shelf_id").references(() => shelves.id, {
+    onDelete: "set null",
+  }),
   title: text("title").notNull(),
   sourceType: sourceTypeEnum("source_type").notNull(),
   sourceUrl: text("source_url"),

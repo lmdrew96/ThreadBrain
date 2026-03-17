@@ -5,11 +5,13 @@ import type {
   chunks,
   checkIns,
   exports,
+  shelves,
 } from "@/lib/db/schema";
 
 // Inferred types from Drizzle schema
 export type Document = InferSelectModel<typeof documents>;
 export type ReadingSession = InferSelectModel<typeof readingSessions>;
+export type Shelf = InferSelectModel<typeof shelves>;
 export type Chunk = InferSelectModel<typeof chunks>;
 export type CheckIn = InferSelectModel<typeof checkIns>;
 export type Export = InferSelectModel<typeof exports>;
