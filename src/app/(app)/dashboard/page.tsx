@@ -73,7 +73,7 @@ export default function DashboardPage() {
   const unshelvedCount = documents.filter((d) => !d.shelfId).length;
 
   return (
-    <div className="flex min-h-[calc(100vh-56px)]">
+    <div className="flex min-h-[calc(100vh-56px)] overflow-x-hidden">
       {/* ── Sidebar ─────────────────────────────────────────────── */}
       <aside className="w-56 shrink-0 border-r p-4 space-y-1 hidden sm:block">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-3">
@@ -122,7 +122,7 @@ export default function DashboardPage() {
       </aside>
 
       {/* ── Main content ─────────────────────────────────────────── */}
-      <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8 max-w-3xl">
+      <div className="flex-1 min-w-0 overflow-x-hidden px-4 sm:px-6 py-6 sm:py-8 max-w-3xl">
         {/* Mobile filter row */}
         <div className="flex gap-2 overflow-x-auto pb-2 sm:hidden mb-6">
           {[

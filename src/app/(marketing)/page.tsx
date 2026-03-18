@@ -3,7 +3,7 @@ import { SignedIn, SignedOut } from "@clerk/nextjs";
 
 export default function LandingPage() {
   return (
-    <main className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-6">
+    <main className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-6 pt-20 sm:pt-0">
       {/* Atmospheric background */}
       <div className="absolute inset-0 bg-background" />
 
