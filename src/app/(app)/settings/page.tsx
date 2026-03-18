@@ -225,7 +225,6 @@ export default function SettingsPage() {
 // ─── Research Journal connection ───────────────────────────────────────────
 
 function JournalConnectionSection() {
-  const [rjUrl, setRjUrl] = useState("");
   const [rjApiKey, setRjApiKey] = useState("");
   const [keySet, setKeySet] = useState(false);
   const [showKey, setShowKey] = useState(false);
@@ -236,7 +235,6 @@ function JournalConnectionSection() {
     fetch("/api/user/settings")
       .then((r) => r.json())
       .then((d) => {
-        setRjUrl(d.rjUrl ?? "");
         setKeySet(d.rjApiKeySet ?? false);
       })
       .catch(() => {})
@@ -246,7 +244,7 @@ function JournalConnectionSection() {
   async function handleSave() {
     setSaving(true);
     try {
-      const body: Record<string, string> = { rjUrl };
+      const body: Record<string, string> = {};
       if (rjApiKey) body.rjApiKey = rjApiKey;
 
       const res = await fetch("/api/user/settings", {
@@ -268,7 +266,7 @@ function JournalConnectionSection() {
     }
   }
 
-  const connected = !!rjUrl && keySet;
+  const connected = keySet;
 
   return (
     <section className="space-y-4">
@@ -301,17 +299,9 @@ function JournalConnectionSection() {
 
         {!loading && (
           <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Research Journal URL
-              </label>
-              <input
-                type="url"
-                value={rjUrl}
-                onChange={(e) => setRjUrl(e.target.value)}
-                placeholder="https://your-rj-domain.com"
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Endpoint</span>
+              <span className="font-mono text-xs text-muted-foreground">research.adhdesigns.dev</span>
             </div>
 
             <div>
@@ -341,7 +331,7 @@ function JournalConnectionSection() {
 
             <button
               onClick={handleSave}
-              disabled={saving || (!rjUrl && !rjApiKey)}
+              disabled={saving || !rjApiKey}
               className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {saving ? "Saving..." : connected ? "Update Connection" : "Save Connection"}

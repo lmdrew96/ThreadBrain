@@ -45,9 +45,6 @@ export async function PATCH(req: NextRequest) {
     updatedAt: new Date(),
   };
 
-  if ("rjUrl" in body) {
-    updates.rjUrl = body.rjUrl?.trim() || null;
-  }
   if ("rjApiKey" in body && body.rjApiKey?.trim()) {
     updates.rjApiKey = encrypt(body.rjApiKey.trim());
   }
