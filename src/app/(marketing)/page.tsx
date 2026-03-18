@@ -9,15 +9,15 @@ export default function LandingPage() {
 
       {/* Gradient orbs */}
       <div
-        className="orb animate-float-slow absolute w-[500px] h-[500px] bg-indigo-600"
+        className="orb animate-float-slow absolute w-[min(500px,80vw)] h-[min(500px,80vw)] bg-indigo-600"
         style={{ top: "15%", left: "10%" }}
       />
       <div
-        className="orb animate-float-medium absolute w-[400px] h-[400px] bg-amber-500"
+        className="orb animate-float-medium absolute w-[min(400px,70vw)] h-[min(400px,70vw)] bg-amber-500"
         style={{ bottom: "20%", right: "8%", animationDelay: "6s" }}
       />
       <div
-        className="orb animate-float-slow absolute w-[300px] h-[300px] bg-violet-700"
+        className="orb animate-float-slow absolute w-[min(300px,60vw)] h-[min(300px,60vw)] bg-violet-700"
         style={{ top: "60%", left: "55%", animationDelay: "12s" }}
       />
 

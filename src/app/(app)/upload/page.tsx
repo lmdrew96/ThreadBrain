@@ -65,7 +65,12 @@ function UploadPageContent() {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {tab === "pdf" ? "Upload PDF" : tab === "url" ? "Import URL" : "Paste Text"}
+                <span className="sm:hidden">
+                  {tab === "pdf" ? "PDF" : tab === "url" ? "URL" : "Paste"}
+                </span>
+                <span className="hidden sm:inline">
+                  {tab === "pdf" ? "Upload PDF" : tab === "url" ? "Import URL" : "Paste Text"}
+                </span>
               </button>
             ))}
           </div>
@@ -410,7 +415,7 @@ function SessionSetup({
                 }`}
               >
                 <span className="block text-lg font-bold">{level}</span>
-                <span className="hidden sm:block text-xs text-muted-foreground mt-0.5">
+                <span className="block text-xs text-muted-foreground mt-0.5 leading-tight">
                   {energyLabels[level]}
                 </span>
               </button>

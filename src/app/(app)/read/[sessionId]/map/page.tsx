@@ -109,7 +109,8 @@ export default function MapPage() {
             onClick={() => router.push(`/read/${sessionId}/thread`)}
             className="w-full rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
           >
-            🧵 View Thread Map — see how the ideas connect
+            <span className="sm:hidden">🧵 View Thread Map</span>
+            <span className="hidden sm:inline">🧵 View Thread Map — see how the ideas connect</span>
           </button>
         </div>
       )}

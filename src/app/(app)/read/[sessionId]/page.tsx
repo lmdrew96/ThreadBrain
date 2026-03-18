@@ -272,7 +272,7 @@ export default function ReadingPage() {
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 sm:h-1 bg-muted rounded-full mb-6 sm:mb-8 overflow-hidden" role="progressbar" aria-valuenow={currentIdx + 1} aria-valuemin={1} aria-valuemax={chunks.length} aria-label={`Reading progress: chunk ${currentIdx + 1} of ${chunks.length}`}>
+      <div className="h-2 bg-muted rounded-full mb-6 sm:mb-8 overflow-hidden" role="progressbar" aria-valuenow={currentIdx + 1} aria-valuemin={1} aria-valuemax={chunks.length} aria-label={`Reading progress: chunk ${currentIdx + 1} of ${chunks.length}`}>
         <div
           className="h-full bg-primary rounded-full transition-all duration-300"
           style={{ width: `${progress}%` }}
@@ -310,9 +310,9 @@ export default function ReadingPage() {
               <button
                 onClick={() => saveHighlight(h)}
                 title="Save to ThreadNotes"
-                className="shrink-0 opacity-0 group-hover/highlight:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-primary"
+                className="shrink-0 md:opacity-0 md:group-hover/highlight:opacity-100 transition-opacity p-2 rounded hover:bg-muted text-muted-foreground hover:text-primary"
               >
-                <Bookmark className="w-3.5 h-3.5" />
+                <Bookmark className="w-4 h-4" />
               </button>
             </div>
           ))}

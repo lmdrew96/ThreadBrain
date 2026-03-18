@@ -122,7 +122,7 @@ export default function DashboardPage() {
       </aside>
 
       {/* ── Main content ─────────────────────────────────────────── */}
-      <div className="flex-1 px-6 py-8 max-w-3xl">
+      <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8 max-w-3xl">
         {/* Mobile filter row */}
         <div className="flex gap-2 overflow-x-auto pb-2 sm:hidden mb-6">
           {[
@@ -523,7 +523,7 @@ function DocumentCard({
         </button>
 
         {/* Action buttons — always visible on mobile, hover-only on desktop */}
-        <div className="flex items-center gap-1 px-3 sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity shrink-0">
+        <div className="flex items-center gap-1.5 px-2 sm:px-3 sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity shrink-0">
           {/* Shelf picker */}
           <div className="relative" ref={shelfRef}>
             <button
@@ -531,7 +531,7 @@ function DocumentCard({
                 e.stopPropagation();
                 setShelfOpen((o) => !o);
               }}
-              className="flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex items-center gap-1 rounded-md border px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               title="Assign to shelf"
             >
               <BookMarked className="w-3.5 h-3.5" />
@@ -577,7 +577,7 @@ function DocumentCard({
           <button
             onClick={handleDelete}
             disabled={deleteState === "deleting"}
-            className={`flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${
+            className={`flex items-center gap-1 rounded-md border px-2.5 py-2 text-xs transition-colors ${
               deleteState === "confirm"
                 ? "border-destructive/50 bg-destructive/10 text-destructive"
                 : "text-muted-foreground hover:border-destructive/40 hover:text-destructive"

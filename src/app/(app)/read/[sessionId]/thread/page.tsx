@@ -300,17 +300,18 @@ export default function ThreadPage() {
           </span>
         </div>
 
-        {/* Legend */}
+        {/* Legend — emoji-only on mobile, full on sm+ */}
         {threadMap && (
-          <div className="hidden sm:flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
             {(Object.entries(TYPE_META) as [TNode["type"], typeof TYPE_META[TNode["type"]]][]).map(
               ([type, meta]) => (
-                <div key={type} className="flex items-center gap-1.5">
+                <div key={type} className="flex items-center gap-1 shrink-0">
                   <span
-                    className="w-2 h-2 rounded-full"
+                    className="w-2 h-2 rounded-full shrink-0"
                     style={{ background: meta.color }}
                   />
-                  <span className="text-xs text-muted-foreground capitalize">{type}</span>
+                  <span className="hidden sm:inline text-xs text-muted-foreground capitalize">{type}</span>
+                  <span className="sm:hidden text-xs" title={type}>{meta.emoji}</span>
                 </div>
               )
             )}
@@ -329,21 +330,21 @@ export default function ThreadPage() {
               }}
               onMouseLeave={() => setRegenState("idle")}
               disabled={loading}
-              className={`text-sm rounded-md border px-2 sm:px-3 py-1.5 font-medium transition-colors disabled:opacity-50 ${
+              className={`text-sm rounded-md border px-3 py-2 font-medium transition-colors disabled:opacity-50 ${
                 regenState === "confirm"
                   ? "border-destructive/50 bg-destructive/10 text-destructive"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               <span className="hidden sm:inline">{regenState === "confirm" ? "Sure? Regenerate" : "↺ Regenerate"}</span>
-              <span className="sm:hidden">{regenState === "confirm" ? "Sure?" : "↺"}</span>
+              <span className="sm:hidden">{regenState === "confirm" ? "Sure?" : "↺ Regen"}</span>
             </button>
             <button
               onClick={() => router.push(`/read/${sessionId}`)}
-              className="text-sm rounded-md bg-primary px-2 sm:px-3 py-1.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              className="text-sm rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <span className="hidden sm:inline">Continue Reading →</span>
-              <span className="sm:hidden">Read →</span>
+              <span className="sm:hidden">Continue →</span>
             </button>
           </div>
         )}
