@@ -59,8 +59,8 @@ export default function ExportPage() {
       if (!res.ok) throw new Error(data.error);
       toast(
         data.failed > 0
-          ? `Saved ${data.saved} of ${data.total} excerpts to Research Journal`
-          : `${data.saved} excerpt${data.saved !== 1 ? "s" : ""} saved to Research Journal ✓`
+          ? `Saved ${data.saved} of ${data.total} excerpts to ThreadNotes`
+          : `${data.saved} excerpt${data.saved !== 1 ? "s" : ""} saved to ThreadNotes ✓`
       );
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't save — try again", "error");
@@ -164,7 +164,7 @@ export default function ExportPage() {
             className="w-full rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <span>🔖</span>
-            {savingToJournal ? "Saving to Research Journal..." : "Save all to Research Journal"}
+            {savingToJournal ? "Saving to ThreadNotes..." : "Save all to ThreadNotes"}
           </button>
         </div>
       )}

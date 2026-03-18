@@ -168,7 +168,7 @@ export default function ReadingPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast("Saved to Research Journal ✓");
+      toast("Saved to ThreadNotes ✓");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't save — try again", "error");
     }
@@ -309,7 +309,7 @@ export default function ReadingPage() {
               </span>
               <button
                 onClick={() => saveHighlight(h)}
-                title="Save to Research Journal"
+                title="Save to ThreadNotes"
                 className="shrink-0 opacity-0 group-hover/highlight:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-primary"
               >
                 <Bookmark className="w-3.5 h-3.5" />
