@@ -150,7 +150,7 @@ function PdfUpload({
         ) : (
           <div className="text-center text-muted-foreground">
             <p className="font-medium">Drop a PDF here or click to browse</p>
-            <p className="text-sm mt-1">Max 25 MB</p>
+            <p className="text-sm mt-1">Max 10 MB</p>
           </div>
         )}
       </label>

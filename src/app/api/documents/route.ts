@@ -90,9 +90,9 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      if (file.size > 25 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) {
         return NextResponse.json(
-          { error: "File too large. Max 25 MB." },
+          { error: "File too large. Max 10 MB." },
           { status: 400 }
         );
       }
@@ -122,6 +122,19 @@ export async function POST(req: NextRequest) {
     if (!rawText || !rawText.trim()) {
       return NextResponse.json(
         { error: "No text could be extracted" },
+        { status: 400 }
+      );
+    }
+
+    const words = wordCount(rawText);
+    const estimatedTokens = Math.round(words * 1.33);
+    const MAX_TOKENS = 150_000;
+
+    if (estimatedTokens > MAX_TOKENS) {
+      return NextResponse.json(
+        {
+          error: `Document is too long (~${words.toLocaleString()} words, ~${estimatedTokens.toLocaleString()} tokens). Max ~${Math.round(MAX_TOKENS / 1.33).toLocaleString()} words to stay within AI context limits.`,
+        },
         { status: 400 }
       );
     }
