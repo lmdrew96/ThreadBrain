@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { sessionId } = await req.json();
+    const { sessionId, targetChunkSize } = await req.json();
 
     // Load session
     const [session] = await db
@@ -132,7 +132,8 @@ export async function POST(req: NextRequest) {
               session.energyLevel,
               segments.length > 1
                 ? { index: segIdx, total: segments.length, previousHeader }
-                : undefined
+                : undefined,
+              targetChunkSize
             );
 
             // Stream from Claude — each chunk object is emitted as soon as it's complete

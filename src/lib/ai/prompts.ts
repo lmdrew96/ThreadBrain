@@ -44,14 +44,28 @@ export function buildChunkingPrompt(
   text: string,
   purpose: string,
   energyLevel: number,
-  segmentInfo?: { index: number; total: number; previousHeader?: string }
+  segmentInfo?: { index: number; total: number; previousHeader?: string },
+  targetChunkSize?: number
 ): string {
-  const sizeGuide =
-    energyLevel <= 2
-      ? "Very short chunks: ~1 paragraph, 100-200 words each. The reader has low energy — keep it bite-sized."
-      : energyLevel <= 3
-        ? "Medium chunks: ~2-3 paragraphs, 200-400 words each. Balanced energy."
-        : "Longer chunks: ~3-5 paragraphs, 400-600 words each. The reader has good energy today.";
+  let sizeGuide: string;
+
+  if (targetChunkSize) {
+    // User has customized their chunk size for this energy level
+    const descriptor =
+      targetChunkSize <= 200
+        ? "Very short chunks — keep it bite-sized."
+        : targetChunkSize <= 400
+          ? "Medium-length chunks — balanced and manageable."
+          : "Longer chunks — the reader can handle more at once.";
+    sizeGuide = `Target ~${targetChunkSize} words per chunk. ${descriptor}`;
+  } else {
+    sizeGuide =
+      energyLevel <= 2
+        ? "Very short chunks: ~1 paragraph, 100-200 words each. The reader has low energy — keep it bite-sized."
+        : energyLevel <= 3
+          ? "Medium chunks: ~2-3 paragraphs, 200-400 words each. Balanced energy."
+          : "Longer chunks: ~3-5 paragraphs, 400-600 words each. The reader has good energy today.";
+  }
 
   let contextNote = "";
   if (segmentInfo && segmentInfo.index > 0 && segmentInfo.previousHeader) {

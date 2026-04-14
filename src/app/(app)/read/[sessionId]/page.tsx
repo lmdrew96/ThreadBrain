@@ -7,6 +7,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { Bookmark, Map } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useTheme } from "@/lib/theme-context";
 import type { Chunk } from "@/types";
 
 // Allow <mark> tags through sanitizer for highlights
@@ -24,6 +25,7 @@ export default function ReadingPage() {
   const router = useRouter();
   const sessionId = params.sessionId as string;
 
+  const { chunkSizes } = useTheme();
   const [chunks, setChunks] = useState<Chunk[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -63,10 +65,11 @@ export default function ReadingPage() {
         setIsStreaming(true);
         setLoading(false);
 
+        const targetChunkSize = chunkSizes[session.energyLevel];
         const res = await fetch("/api/ai/chunk", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId }),
+          body: JSON.stringify({ sessionId, targetChunkSize }),
         });
 
         if (!res.ok || !res.body) {
