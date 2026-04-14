@@ -8,7 +8,7 @@ import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { Bookmark, Map, Pause } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/lib/theme-context";
-import type { Chunk } from "@/types";
+import type { Chunk, CheckIn } from "@/types";
 
 // Allow <mark> tags through sanitizer for highlights
 const sanitizeSchema = {
@@ -33,6 +33,12 @@ export default function ReadingPage() {
   const [streamError, setStreamError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const streamStarted = useRef(false);
+
+  // Check-in state
+  const CHECKIN_INTERVAL = 4;
+  const [checkIn, setCheckIn] = useState<CheckIn | null>(null);
+  const [checkInResponse, setCheckInResponse] = useState("");
+  const [checkInLoading, setCheckInLoading] = useState(false);
 
   // Prevent hydration mismatch by waiting for client-side render
   useEffect(() => {
@@ -140,11 +146,61 @@ export default function ReadingPage() {
     router.push("/dashboard");
   }
 
+  async function triggerCheckIn(chunkId: string) {
+    setCheckInLoading(true);
+    try {
+      const res = await fetch("/api/checkins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chunkId }),
+      });
+      if (!res.ok) throw new Error("Check-in generation failed");
+      const data = await res.json();
+      setCheckIn(data);
+    } catch {
+      // Non-blocking — reading continues if check-in fails
+    } finally {
+      setCheckInLoading(false);
+    }
+  }
+
+  async function handleCheckInSubmit() {
+    if (!checkIn) return;
+    await fetch(`/api/checkins/${checkIn.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userResponse: checkInResponse }),
+    });
+    setCheckIn(null);
+    setCheckInResponse("");
+  }
+
+  async function handleCheckInSkip() {
+    if (!checkIn) return;
+    fetch(`/api/checkins/${checkIn.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ skipped: true }),
+    });
+    setCheckIn(null);
+    setCheckInResponse("");
+  }
+
   async function goNext() {
     if (currentIdx < chunks.length - 1) {
+      const prevChunkId = chunks[currentIdx].id;
       const nextIdx = currentIdx + 1;
       setCurrentIdx(nextIdx);
       await saveProgress(nextIdx);
+
+      // Trigger check-in every N chunks (not on the last chunk)
+      if (
+        nextIdx > 0 &&
+        nextIdx % CHECKIN_INTERVAL === 0 &&
+        nextIdx < chunks.length - 1
+      ) {
+        triggerCheckIn(prevChunkId);
+      }
     } else if (!isStreaming) {
       // Complete the session
       await fetch(`/api/sessions/${sessionId}`, {
@@ -195,6 +251,9 @@ export default function ReadingPage() {
         e.target instanceof HTMLTextAreaElement
       )
         return;
+
+      // Suppress navigation while check-in is active
+      if (checkIn || checkInLoading) return;
 
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         e.preventDefault();
@@ -348,6 +407,46 @@ export default function ReadingPage() {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Check-in reflection prompt */}
+      {checkInLoading && (
+        <div className="rounded-xl border bg-primary/5 p-5 mb-6">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />
+            Thinking of a reflection...
+          </div>
+        </div>
+      )}
+
+      {checkIn && !checkInLoading && (
+        <div className="rounded-xl border bg-primary/5 p-5 mb-6 space-y-3">
+          <p className="text-sm font-medium text-foreground">
+            {checkIn.prompt}
+          </p>
+          <textarea
+            value={checkInResponse}
+            onChange={(e) => setCheckInResponse(e.target.value)}
+            placeholder="What comes to mind..."
+            rows={2}
+            className="w-full rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleCheckInSubmit}
+              disabled={!checkInResponse.trim()}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              Share
+            </button>
+            <button
+              onClick={handleCheckInSkip}
+              className="rounded-lg border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted"
+            >
+              Skip
+            </button>
+          </div>
         </div>
       )}
 
