@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Markdown from "react-markdown";
+import { Copy } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import type { KeyQuote } from "@/types";
 
 export default function ExportPage() {
   const params = useParams();
@@ -11,6 +13,7 @@ export default function ExportPage() {
   const sessionId = params.sessionId as string;
 
   const [summary, setSummary] = useState<string | null>(null);
+  const [keyQuotes, setKeyQuotes] = useState<KeyQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -29,6 +32,7 @@ export default function ExportPage() {
 
         const data = await res.json();
         setSummary(data.summaryMd);
+        if (data.keyQuotes?.length > 0) setKeyQuotes(data.keyQuotes);
       } catch (err) {
         console.error(err);
         setError("Failed to generate your reading export. Please try again.");
@@ -40,9 +44,20 @@ export default function ExportPage() {
     generateExport();
   }, [sessionId]);
 
+  function buildFullExport(): string {
+    let text = summary ?? "";
+    if (keyQuotes.length > 0) {
+      text += "\n\n## Key Quotes\n\n";
+      text += keyQuotes
+        .map((q) => `> "${q.quote}"\n> — *${q.chunkRef}*\n>\n> ${q.context}`)
+        .join("\n\n");
+    }
+    return text;
+  }
+
   async function handleCopy() {
     if (!summary) return;
-    await navigator.clipboard.writeText(summary);
+    await navigator.clipboard.writeText(buildFullExport());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -71,7 +86,7 @@ export default function ExportPage() {
 
   function handleDownload() {
     if (!summary) return;
-    const blob = new Blob([summary], { type: "text/markdown" });
+    const blob = new Blob([buildFullExport()], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -115,7 +130,10 @@ export default function ExportPage() {
                   if (!res.ok) throw new Error("Export failed");
                   return res.json();
                 })
-                .then((data) => setSummary(data.summaryMd))
+                .then((data) => {
+                  setSummary(data.summaryMd);
+                  if (data.keyQuotes?.length > 0) setKeyQuotes(data.keyQuotes);
+                })
                 .catch((err) => {
                   console.error(err);
                   setError(
@@ -136,6 +154,42 @@ export default function ExportPage() {
           <div className="rounded-xl border bg-card p-6 prose prose-invert prose-sm max-w-none">
             <Markdown>{summary}</Markdown>
           </div>
+
+          {keyQuotes.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                Key Quotes
+              </h2>
+              {keyQuotes.map((q, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border bg-card p-4 border-l-4 border-l-primary/40 group/quote"
+                >
+                  <p className="text-sm italic leading-relaxed mb-2">
+                    &ldquo;{q.quote}&rdquo;
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {q.context}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground/60">
+                      — {q.chunkRef}
+                    </span>
+                    <button
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(`"${q.quote}"`);
+                        toast("Quote copied");
+                      }}
+                      title="Copy quote"
+                      className="md:opacity-0 md:group-hover/quote:opacity-100 transition-opacity p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-3">
             <button

@@ -246,3 +246,40 @@ ${content}
 
 Generate a markdown summary export.`;
 }
+
+export const QUOTE_EXTRACTION_PROMPT = `You are extracting the most important verbatim quotes from a document that an ADHD reader just finished reading. These quotes will be displayed as a structured reference alongside their reading summary.
+
+Return a JSON array of 3-6 quotes. Each quote must be:
+- An EXACT verbatim substring from the document text — do NOT paraphrase
+- Relevant to the reader's stated purpose
+- Meaningful enough to be worth saving for later reference
+
+Format:
+[
+  {"quote": "exact text from document", "chunkRef": "micro-header of the source chunk", "context": "one sentence explaining why this quote matters"},
+  ...
+]
+
+Rules:
+- 3-6 quotes total — quality over quantity
+- Each "quote" must be word-for-word from the chunk content
+- Each "chunkRef" must be the exact micro-header of the chunk the quote came from
+- Each "context" is a brief explanation of significance (1 sentence max)
+- CRITICAL: Return ONLY valid JSON. No markdown code fences, no text before or after the array.`;
+
+export function buildQuoteExtractionPrompt(
+  chunks: Array<{ microHeader: string; content: string }>,
+  purpose: string
+): string {
+  const content = chunks
+    .map((c) => `--- ${c.microHeader} ---\n${c.content.slice(0, 1500)}`)
+    .join("\n\n");
+
+  return `READER'S PURPOSE: ${purpose}
+
+Here are the reading chunks with their micro-headers:
+
+${content}
+
+Extract 3-6 key verbatim quotes as a JSON array.`;
+}

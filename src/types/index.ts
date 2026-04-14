@@ -45,6 +45,13 @@ export interface ThreadMap {
   edges: ThreadEdge[];
 }
 
+// Key quote extracted from export
+export interface KeyQuote {
+  quote: string;
+  chunkRef: string;
+  context: string;
+}
+
 // API request/response types
 export interface CreateDocumentRequest {
   text: string;

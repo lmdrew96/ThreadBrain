@@ -58,6 +58,24 @@ export async function callClaudeWithPrefill(
 }
 
 /**
+ * Call Claude expecting a JSON response. Uses prefill to force valid JSON,
+ * strips code fences, and parses the result. Returns typed data.
+ */
+export async function callClaudeJson<T>(
+  params: ClaudeCallParams & { prefill?: string }
+): Promise<T> {
+  const raw = await callClaudeWithPrefill({
+    ...params,
+    prefill: params.prefill ?? "[",
+  });
+
+  // Strip markdown code fences if the model wrapped the JSON
+  const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
+  return JSON.parse(text) as T;
+}
+
+/**
  * Stream Claude response with prefill, yielding complete top-level JSON objects
  * from a JSON array as they arrive. This lets us send chunks to the client
  * as soon as each one is fully generated, instead of waiting for the entire response.

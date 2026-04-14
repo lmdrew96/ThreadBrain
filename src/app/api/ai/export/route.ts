@@ -7,8 +7,14 @@ import {
   exports as exportsTable,
 } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
-import { callClaude } from "@/lib/ai/claude";
-import { EXPORT_SYSTEM_PROMPT, buildExportPrompt } from "@/lib/ai/prompts";
+import { callClaude, callClaudeJson } from "@/lib/ai/claude";
+import {
+  EXPORT_SYSTEM_PROMPT,
+  buildExportPrompt,
+  QUOTE_EXTRACTION_PROMPT,
+  buildQuoteExtractionPrompt,
+} from "@/lib/ai/prompts";
+import type { KeyQuote } from "@/types";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -60,23 +66,39 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await callClaude({
-      system: EXPORT_SYSTEM_PROMPT,
-      user: buildExportPrompt(
-        sessionChunks.map((c) => ({
-          content: c.content,
-          highlights: c.highlights,
-        })),
-        session.purpose
-      ),
-    });
+    const [summaryMd, keyQuotes] = await Promise.all([
+      callClaude({
+        system: EXPORT_SYSTEM_PROMPT,
+        user: buildExportPrompt(
+          sessionChunks.map((c) => ({
+            content: c.content,
+            highlights: c.highlights,
+          })),
+          session.purpose
+        ),
+      }),
+      callClaudeJson<KeyQuote[]>({
+        system: QUOTE_EXTRACTION_PROMPT,
+        user: buildQuoteExtractionPrompt(
+          sessionChunks.map((c) => ({
+            microHeader: c.microHeader,
+            content: c.content,
+          })),
+          session.purpose
+        ),
+        maxTokens: 2048,
+      }).catch((err) => {
+        console.error("Quote extraction failed (non-blocking):", err);
+        return [] as KeyQuote[];
+      }),
+    ]);
 
     const [exportRecord] = await db
       .insert(exportsTable)
       .values({
         sessionId,
-        summaryMd: response,
-        keyQuotes: [],
+        summaryMd,
+        keyQuotes,
       })
       .returning();
 

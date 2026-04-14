@@ -106,7 +106,7 @@ export const exports = pgTable("exports", {
     .notNull(),
   summaryMd: text("summary_md").notNull(),
   keyQuotes: jsonb("key_quotes")
-    .$type<Array<{ quote: string; pageRef: string }>>()
+    .$type<Array<{ quote: string; chunkRef: string; context: string }>>()
     .default([])
     .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
