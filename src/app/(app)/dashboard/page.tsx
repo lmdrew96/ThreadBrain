@@ -452,6 +452,14 @@ function DocumentCard({
       router.push(`/read/${session.id}/export`);
       return;
     }
+    // Reactivate paused sessions (fire-and-forget — navigate immediately)
+    if (session.status === "paused") {
+      fetch(`/api/sessions/${session.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "active" }),
+      });
+    }
     if (session.totalChunks > 0) {
       router.push(`/read/${session.id}`);
     } else {
@@ -604,6 +612,21 @@ function SessionStatus({
     return (
       <p className="text-sm text-muted-foreground mt-0.5">
         Complete · <span className="text-primary">View Export</span>
+      </p>
+    );
+  }
+
+  if (session.status === "paused") {
+    const chunkProgress =
+      session.totalChunks > 0
+        ? `Chunk ${session.currentChunkIdx + 1} of ${session.totalChunks}`
+        : "";
+    return (
+      <p className="text-sm text-muted-foreground mt-0.5">
+        <span className="text-amber-500">⏸ Paused</span>
+        {chunkProgress && ` · ${chunkProgress}`}
+        {" · "}
+        <span className="text-primary">Resume</span>
       </p>
     );
   }

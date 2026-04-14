@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
-import { Bookmark, Map } from "lucide-react";
+import { Bookmark, Map, Pause } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/lib/theme-context";
 import type { Chunk } from "@/types";
@@ -130,6 +130,15 @@ export default function ReadingPage() {
     },
     [sessionId]
   );
+
+  async function handlePause() {
+    await fetch(`/api/sessions/${sessionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "paused", currentChunkIdx: currentIdx }),
+    });
+    router.push("/dashboard");
+  }
 
   async function goNext() {
     if (currentIdx < chunks.length - 1) {
@@ -278,6 +287,15 @@ export default function ReadingPage() {
           >
             <Map className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Summary</span>
+          </button>
+          <span className="text-muted-foreground">·</span>
+          <button
+            onClick={handlePause}
+            aria-label="Pause reading session"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Pause className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Pause</span>
           </button>
         </div>
         <span className="text-sm text-muted-foreground">
