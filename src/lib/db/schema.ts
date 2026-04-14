@@ -76,8 +76,6 @@ export const chunks = pgTable("chunks", {
     .$type<Array<{ text: string; reason: string }>>()
     .default([])
     .notNull(),
-  startOffset: integer("start_offset").notNull(),
-  endOffset: integer("end_offset").notNull(),
 });
 
 // Check-ins — comprehension prompts and user responses (V2, but schema ready)

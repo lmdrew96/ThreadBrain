@@ -157,8 +157,6 @@ export async function POST(req: NextRequest) {
                     microHeader: aiChunk.microHeader,
                     content: aiChunk.content,
                     highlights: normalizeHighlights(aiChunk.highlights),
-                    startOffset: 0,
-                    endOffset: 0,
                   })
                   .returning();
 
