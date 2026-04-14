@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
-import { Bookmark } from "lucide-react";
+import { Bookmark, Map } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Chunk } from "@/types";
 
@@ -259,13 +259,24 @@ export default function ReadingPage() {
     <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
-        <button
-          onClick={() => router.push("/dashboard")}
-          aria-label="Back to library"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          &larr; Library
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push("/dashboard")}
+            aria-label="Back to library"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            &larr; Library
+          </button>
+          <span className="text-muted-foreground">·</span>
+          <button
+            onClick={() => router.push(`/read/${sessionId}/map`)}
+            aria-label="View summary and thread map"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Map className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Summary</span>
+          </button>
+        </div>
         <span className="text-sm text-muted-foreground">
           Chunk {currentIdx + 1} of {totalDisplay}
         </span>
