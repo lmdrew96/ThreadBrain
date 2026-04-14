@@ -19,9 +19,15 @@ export type Export = InferSelectModel<typeof exports>;
 export type UserSettings = InferSelectModel<typeof userSettings>;
 
 // Thread Map types
+// Analytical content (essays, articles, research papers)
+export type AnalyticalNodeType = "claim" | "evidence" | "concept" | "conclusion" | "question";
+
+// Narrative content (fiction, stories, plays, chapters with plot)
+export type NarrativeNodeType = "character" | "event" | "theme" | "setting" | "conflict" | "resolution";
+
 export interface ThreadNode {
   id: string;
-  type: "claim" | "evidence" | "concept" | "conclusion" | "question";
+  type: AnalyticalNodeType | NarrativeNodeType;
   label: string;
   detail?: string;
 }

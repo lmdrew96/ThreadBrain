@@ -25,6 +25,7 @@ const TYPE_META: Record<
   TNode["type"],
   { color: string; bg: string; border: string; emoji: string }
 > = {
+  // Analytical node types (essays, articles, research papers)
   claim: {
     color: "#d97706",
     bg: "rgba(217,119,6,0.12)",
@@ -54,6 +55,43 @@ const TYPE_META: Record<
     bg: "rgba(249,115,22,0.12)",
     border: "rgba(249,115,22,0.5)",
     emoji: "❓",
+  },
+  // Narrative node types (fiction, stories, plays)
+  character: {
+    color: "#ec4899",
+    bg: "rgba(236,72,153,0.12)",
+    border: "rgba(236,72,153,0.5)",
+    emoji: "👤",
+  },
+  event: {
+    color: "#f59e0b",
+    bg: "rgba(245,158,11,0.12)",
+    border: "rgba(245,158,11,0.5)",
+    emoji: "⚡",
+  },
+  theme: {
+    color: "#8b5cf6",
+    bg: "rgba(139,92,246,0.12)",
+    border: "rgba(139,92,246,0.5)",
+    emoji: "🎭",
+  },
+  setting: {
+    color: "#06b6d4",
+    bg: "rgba(6,182,212,0.12)",
+    border: "rgba(6,182,212,0.5)",
+    emoji: "🌍",
+  },
+  conflict: {
+    color: "#ef4444",
+    bg: "rgba(239,68,68,0.12)",
+    border: "rgba(239,68,68,0.5)",
+    emoji: "⚔️",
+  },
+  resolution: {
+    color: "#10b981",
+    bg: "rgba(16,185,129,0.12)",
+    border: "rgba(16,185,129,0.5)",
+    emoji: "🔓",
   },
 };
 
@@ -170,7 +208,7 @@ function buildEdges(edges: ThreadMap["edges"]): Edge[] {
     labelBgPadding: [4, 3] as [number, number],
     style: { stroke: "var(--color-border)", strokeWidth: 1.5 },
     markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-muted-foreground)" },
-    animated: e.label === "supports" || e.label === "leads to",
+    animated: ["supports", "leads to", "causes", "foreshadows"].includes(e.label),
   }));
 }
 
@@ -300,11 +338,13 @@ export default function ThreadPage() {
           </span>
         </div>
 
-        {/* Legend — emoji-only on mobile, full on sm+ */}
+        {/* Legend — only show node types present in the current map */}
         {threadMap && (
           <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
-            {(Object.entries(TYPE_META) as [TNode["type"], typeof TYPE_META[TNode["type"]]][]).map(
-              ([type, meta]) => (
+            {Array.from(new Set(threadMap.nodes.map((n) => n.type))).map((type) => {
+              const meta = TYPE_META[type];
+              if (!meta) return null;
+              return (
                 <div key={type} className="flex items-center gap-1 shrink-0">
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
@@ -313,8 +353,8 @@ export default function ThreadPage() {
                   <span className="hidden sm:inline text-xs text-muted-foreground capitalize">{type}</span>
                   <span className="sm:hidden text-xs" title={type}>{meta.emoji}</span>
                 </div>
-              )
-            )}
+              );
+            })}
           </div>
         )}
 

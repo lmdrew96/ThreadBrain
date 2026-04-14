@@ -4,7 +4,12 @@ import Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
 import { readingSessions, documents } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { THREAD_MAP_SYSTEM_PROMPT, buildThreadMapPrompt } from "@/lib/ai/prompts";
+import {
+  THREAD_MAP_ANALYTICAL_PROMPT,
+  THREAD_MAP_NARRATIVE_PROMPT,
+  buildThreadMapPrompt,
+  detectContentType,
+} from "@/lib/ai/prompts";
 import type { ThreadMap } from "@/types";
 
 const anthropic = new Anthropic();
@@ -49,10 +54,18 @@ export async function POST(req: NextRequest) {
   try {
     const start = Date.now();
 
+    const contentType = detectContentType(document.rawText);
+    const systemPrompt =
+      contentType === "narrative"
+        ? THREAD_MAP_NARRATIVE_PROMPT
+        : THREAD_MAP_ANALYTICAL_PROMPT;
+
+    console.log(`Thread map content type detected: ${contentType}`);
+
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 4096,
-      system: THREAD_MAP_SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: [
         {
           role: "user",

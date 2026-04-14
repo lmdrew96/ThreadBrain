@@ -70,7 +70,7 @@ DOCUMENT TEXT:
 ${text}`;
 }
 
-export const THREAD_MAP_SYSTEM_PROMPT = `You are mapping the argument structure of an academic document for an ADHD reader who needs to see HOW the ideas connect, not just what they are.
+export const THREAD_MAP_ANALYTICAL_PROMPT = `You are mapping the argument structure of an academic document for an ADHD reader who needs to see HOW the ideas connect, not just what they are.
 
 Extract 8-15 key ideas and show how they relate. Return a JSON object with this exact structure:
 {
@@ -101,6 +101,92 @@ Rules:
 - Every edge source and target MUST match an existing node id exactly
 - Prioritize ideas relevant to the reader's stated purpose
 - CRITICAL: Return ONLY valid JSON. No markdown code fences, no explanation, no text before or after the JSON object.`;
+
+export const THREAD_MAP_NARRATIVE_PROMPT = `You are mapping the narrative structure of a story, novel, play, or other plot-driven text for an ADHD reader who needs to see HOW the story threads connect — characters, events, conflicts, and themes.
+
+Extract 8-15 key story elements and show how they relate. Return a JSON object with this exact structure:
+{
+  "title": "3-6 word title for this thread map",
+  "nodes": [
+    {"id": "n1", "type": "character", "label": "3-7 word noun phrase", "detail": "optional 1-sentence explanation"},
+    ...
+  ],
+  "edges": [
+    {"id": "e1", "source": "n1", "target": "n2", "label": "causes"},
+    ...
+  ]
+}
+
+Node types:
+- "character": major characters or groups of characters
+- "event": key plot points, turning points, or actions
+- "theme": recurring ideas, motifs, or messages
+- "setting": important locations or time periods
+- "conflict": central tensions, obstacles, or opposing forces
+- "resolution": how conflicts resolve, outcomes, or endings
+
+Edge labels — use ONLY these values:
+"causes" | "motivates" | "reveals" | "foreshadows" | "parallels" | "contrasts" | "resolves"
+
+Rules:
+- 8-15 nodes total — don't overwhelm
+- Node labels are short noun phrases, 3-7 words max
+- Every edge source and target MUST match an existing node id exactly
+- Prioritize elements relevant to the reader's stated purpose
+- CRITICAL: Return ONLY valid JSON. No markdown code fences, no explanation, no text before or after the JSON object.`;
+
+// Keep backwards-compatible alias
+export const THREAD_MAP_SYSTEM_PROMPT = THREAD_MAP_ANALYTICAL_PROMPT;
+
+/**
+ * Detect whether document text is narrative (plot-driven) or analytical (argument-driven).
+ * Returns "narrative" or "analytical". Defaults to "analytical" if ambiguous.
+ */
+export function detectContentType(rawText: string): "narrative" | "analytical" {
+  const sample = rawText.slice(0, 8000).toLowerCase();
+
+  // Narrative signals
+  const narrativeMarkers = [
+    /[""\u201c\u201d].*?[""\u201c\u201d]\s*(he|she|they|i)\s+(said|asked|whispered|replied|shouted|murmured|cried)/gi,
+    /\b(chapter\s+\d+|chapter\s+[ivxlc]+)\b/gi,
+    /\b(once upon|long ago|there (was|were) a|in a (land|kingdom|village|town|city))\b/gi,
+    /\b(protagonist|antagonist|narrator|dialogue|plot|storyline)\b/gi,
+  ];
+
+  // Analytical signals
+  const analyticalMarkers = [
+    /\bet\s+al\b/gi,
+    /\b(methodology|findings|hypothesis|abstract|literature review|results|discussion section)\b/gi,
+    /\(\d{4}\)/g, // parenthetical citations like (2024)
+    /\b(fig\.|figure\s+\d|table\s+\d)\b/gi,
+    /\b(p\s*[<>=]\s*0?\.\d|statistically significant|standard deviation|regression)\b/gi,
+    /\b(doi|issn|isbn|journal of)\b/gi,
+  ];
+
+  let narrativeScore = 0;
+  let analyticalScore = 0;
+
+  for (const pattern of narrativeMarkers) {
+    const matches = sample.match(pattern);
+    narrativeScore += matches ? matches.length : 0;
+  }
+
+  for (const pattern of analyticalMarkers) {
+    const matches = sample.match(pattern);
+    analyticalScore += matches ? matches.length : 0;
+  }
+
+  // Dialogue density: count lines with quotation marks as a strong narrative signal
+  const dialogueLines = (sample.match(/[""\u201c].*?[""\u201d]/g) || []).length;
+  if (dialogueLines >= 5) narrativeScore += dialogueLines;
+
+  // Past-tense third-person narration patterns
+  const narrationHits = (sample.match(/\b(he|she|they)\s+(walked|looked|felt|thought|turned|stood|sat|ran|knew|saw|heard|went|came|took)\b/gi) || []).length;
+  if (narrationHits >= 3) narrativeScore += narrationHits;
+
+  // Default to analytical if ambiguous or tied
+  return narrativeScore > analyticalScore ? "narrative" : "analytical";
+}
 
 export function buildThreadMapPrompt(
   rawText: string,
