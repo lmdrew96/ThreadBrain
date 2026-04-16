@@ -1,3 +1,4 @@
+import { extractText } from "unpdf";
 import pdfParse from "pdf-parse";
 
 /**
@@ -54,6 +55,23 @@ export interface PdfExtractionResult {
 export async function extractTextFromPdf(
   buffer: Buffer
 ): Promise<PdfExtractionResult> {
+  // Try unpdf first (modern pdf.js, better font handling, serverless-compatible)
+  try {
+    const { text: rawText } = await extractText(new Uint8Array(buffer), {
+      mergePages: true,
+    });
+    const text = cleanPdfText(rawText);
+    const quality = assessTextQuality(text);
+
+    // If unpdf produced good text, use it
+    if (quality === "good" && text.length > 0) {
+      return { text, quality };
+    }
+  } catch (err) {
+    console.error("[PDF] unpdf extraction failed, falling back to pdf-parse:", err);
+  }
+
+  // Fallback to pdf-parse v1 (reliable but worse with custom fonts)
   const result = await pdfParse(buffer);
   const text = cleanPdfText(result.text);
   const quality = assessTextQuality(text);
