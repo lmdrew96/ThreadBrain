@@ -16,6 +16,16 @@ export const sessionStatusEnum = pgEnum("session_status", [
   "paused",
   "completed",
 ]);
+export const expressPurposeEnum = pgEnum("express_purpose", [
+  "discussion",
+  "quiz",
+  "essay",
+  "conversation",
+]);
+export const expressStatusEnum = pgEnum("express_status", [
+  "active",
+  "completed",
+]);
 
 // Shelves — user-defined collections for organizing documents
 export const shelves = pgTable("shelves", {
@@ -96,6 +106,32 @@ export const userSettings = pgTable("user_settings", {
   rjUrl: text("rj_url"),
   rjApiKey: text("rj_api_key"), // AES-256-GCM encrypted
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// CramOutput shape — used as JSONB type for express session output
+export interface CramOutput {
+  oneLiner: string;
+  skeleton: string[];
+  themes: string[];
+  keyTerms: Array<{ term: string; definition: string }>;
+  keyQuotes: Array<{ quote: string; context: string }>;
+  recallPrompts: string[];
+}
+
+// Express sessions — ExpressBrain cram mode (separate cognitive task from reading)
+export const expressSessions = pgTable("express_sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id").notNull(),
+  documentId: uuid("document_id")
+    .references(() => documents.id, { onDelete: "cascade" })
+    .notNull(),
+  purpose: text("purpose").notNull(),
+  expressPurpose: expressPurposeEnum("express_purpose").notNull(),
+  deadline: timestamp("deadline"),
+  status: expressStatusEnum("status").default("active").notNull(),
+  cramOutput: jsonb("cram_output").$type<CramOutput>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
 });
 
 // Exports — generated summaries from completed sessions

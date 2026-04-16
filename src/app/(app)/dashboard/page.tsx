@@ -3,11 +3,12 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Trash2, BookMarked, Plus, Check, ChevronDown } from "lucide-react";
+import { Trash2, BookMarked, Plus, Check, ChevronDown, Zap } from "lucide-react";
 import type { Document, ReadingSession, Shelf } from "@/types";
 
 interface DocumentWithSession extends Document {
   latestSession: (ReadingSession & { totalChunks: number }) | null;
+  expressCount: number;
 }
 
 type Filter = "all" | "unshelved" | string; // string = shelfId
@@ -523,6 +524,11 @@ function DocumentCard({
                 {currentShelf && (
                   <span className="text-xs text-muted-foreground">
                     · {currentShelf.emoji} {currentShelf.name}
+                  </span>
+                )}
+                {doc.expressCount > 0 && (
+                  <span className="inline-flex items-center gap-0.5 text-xs text-primary" title={`${doc.expressCount} cram sheet${doc.expressCount !== 1 ? "s" : ""}`}>
+                    · <Zap className="w-3 h-3" /> {doc.expressCount}
                   </span>
                 )}
               </div>

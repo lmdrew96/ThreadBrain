@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { Settings, Sun, Moon } from "lucide-react";
+import { Settings, Sun, Moon, Zap } from "lucide-react";
 import { useTheme } from "@/lib/theme-context";
 
 export function AppHeader() {
@@ -15,6 +15,14 @@ export function AppHeader() {
           Thread<span className="text-primary">Brain</span>
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
+          <Link
+            href="/express"
+            className="inline-flex items-center justify-center rounded-md border px-3 sm:px-4 py-2 text-sm font-medium transition-colors hover:bg-muted gap-1.5"
+            title="ExpressBrain — cram mode"
+          >
+            <Zap className="w-3.5 h-3.5 text-primary" />
+            <span className="hidden sm:inline">Express</span>
+          </Link>
           <Link
             href="/upload"
             className="inline-flex items-center justify-center rounded-md bg-primary px-3 sm:px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"

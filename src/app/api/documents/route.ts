@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { documents, readingSessions, chunks } from "@/lib/db/schema";
+import { documents, readingSessions, chunks, expressSessions } from "@/lib/db/schema";
 import { eq, desc, and, count } from "drizzle-orm";
 import { extractTextFromPdf } from "@/lib/pdf";
 import { uploadToR2 } from "@/lib/r2";
@@ -55,9 +55,23 @@ export async function GET() {
     }
   }
 
+  // Fetch express sessions for these documents
+  const userExpressSessions = await db
+    .select()
+    .from(expressSessions)
+    .where(eq(expressSessions.userId, userId))
+    .orderBy(desc(expressSessions.createdAt));
+
+  // Group express sessions by document — count per doc
+  const expressCountByDoc = new Map<string, number>();
+  for (const es of userExpressSessions) {
+    expressCountByDoc.set(es.documentId, (expressCountByDoc.get(es.documentId) ?? 0) + 1);
+  }
+
   const result = userDocs.map((doc) => ({
     ...doc,
     latestSession: sessionsByDoc.get(doc.id) ?? null,
+    expressCount: expressCountByDoc.get(doc.id) ?? 0,
   }));
 
   return NextResponse.json(result);

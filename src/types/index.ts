@@ -7,7 +7,9 @@ import type {
   exports,
   shelves,
   userSettings,
+  expressSessions,
 } from "@/lib/db/schema";
+export type { CramOutput } from "@/lib/db/schema";
 
 // Inferred types from Drizzle schema
 export type Document = InferSelectModel<typeof documents>;
@@ -17,6 +19,7 @@ export type Chunk = InferSelectModel<typeof chunks>;
 export type CheckIn = InferSelectModel<typeof checkIns>;
 export type Export = InferSelectModel<typeof exports>;
 export type UserSettings = InferSelectModel<typeof userSettings>;
+export type ExpressSession = InferSelectModel<typeof expressSessions>;
 
 // Thread Map types
 // Analytical content (essays, articles, research papers)
@@ -74,3 +77,6 @@ export type ChunkStreamMessage =
   | { type: "chunk"; chunk: Chunk }
   | { type: "done"; totalChunks: number }
   | { type: "error"; message: string };
+
+// ExpressBrain types
+export type ExpressPurpose = "discussion" | "quiz" | "essay" | "conversation";
