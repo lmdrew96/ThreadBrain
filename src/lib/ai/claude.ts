@@ -64,6 +64,8 @@ export async function callClaudeWithPrefill(
 /**
  * Call Claude expecting a JSON response. Uses prefill to force valid JSON,
  * strips code fences, and parses the result. Returns typed data.
+ * Note: prefill is not supported by all models (e.g., Sonnet 4.6).
+ * Use callClaudeJsonNoPrefill for those models.
  */
 export async function callClaudeJson<T>(
   params: ClaudeCallParams & { prefill?: string }
@@ -72,6 +74,22 @@ export async function callClaudeJson<T>(
     ...params,
     prefill: params.prefill ?? "[",
   });
+
+  // Strip markdown code fences if the model wrapped the JSON
+  const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
+  return JSON.parse(text) as T;
+}
+
+/**
+ * Call Claude expecting a JSON response without using assistant prefill.
+ * Required for models that don't support prefill (Sonnet 4.6+).
+ * Strips code fences and parses the result.
+ */
+export async function callClaudeJsonNoPrefill<T>(
+  params: ClaudeCallParams
+): Promise<T> {
+  const raw = await callClaude(params);
 
   // Strip markdown code fences if the model wrapped the JSON
   const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
