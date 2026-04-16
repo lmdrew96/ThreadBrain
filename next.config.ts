@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdf-parse"],
+  serverExternalPackages: ["pdfjs-dist"],
   outputFileTracingRoot: path.join(import.meta.dirname, "./"),
   experimental: {
     serverActions: {

@@ -38,9 +38,12 @@ function UploadPageContent() {
     }
   }, [searchParams]);
 
-  function handleDocumentCreated(id: string, title: string) {
+  const [pdfWarning, setPdfWarning] = useState<string | null>(null);
+
+  function handleDocumentCreated(id: string, title: string, warning?: string) {
     setDocumentId(id);
     setDocTitle(title);
+    if (warning) setPdfWarning(warning);
     setStep("setup");
   }
 
@@ -82,6 +85,13 @@ function UploadPageContent() {
       )}
 
       {step === "setup" && documentId && (
+        <>
+        {pdfWarning && (
+          <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            <p className="font-medium mb-1">Heads up</p>
+            <p className="text-amber-200/80">{pdfWarning}</p>
+          </div>
+        )}
         <SessionSetup
           documentId={documentId}
           docTitle={docTitle}
@@ -89,6 +99,7 @@ function UploadPageContent() {
             router.push(`/read/${sessionId}/map`)
           }
         />
+        </>
       )}
     </div>
   );
@@ -97,7 +108,7 @@ function UploadPageContent() {
 function PdfUpload({
   onSuccess,
 }: {
-  onSuccess: (id: string, title: string) => void;
+  onSuccess: (id: string, title: string, warning?: string) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -123,7 +134,7 @@ function PdfUpload({
       }
 
       const data = await res.json();
-      onSuccess(data.documentId, data.title);
+      onSuccess(data.documentId, data.title, data.warning);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {

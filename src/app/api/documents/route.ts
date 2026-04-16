@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
     let rawText: string;
     let sourceType: "pdf" | "paste";
     let fileKey: string | undefined;
+    let quality: "good" | "poor" = "good";
 
     if (contentType.includes("multipart/form-data")) {
       // PDF upload
@@ -112,7 +113,9 @@ export async function POST(req: NextRequest) {
       }
 
       const buffer = Buffer.from(await file.arrayBuffer());
-      rawText = await extractTextFromPdf(buffer);
+      const { text: extractedText, quality: pdfQuality } = await extractTextFromPdf(buffer);
+      quality = pdfQuality;
+      rawText = extractedText;
       title = file.name.replace(/\.pdf$/i, "");
       sourceType = "pdf";
 
@@ -169,6 +172,10 @@ export async function POST(req: NextRequest) {
       documentId: doc.id,
       title: doc.title,
       wordCount: doc.wordCount,
+      ...(quality === "poor" && {
+        warning:
+          "Some text in this PDF may not have extracted correctly. If the reading looks garbled, try pasting the text directly instead.",
+      }),
     });
   } catch (error) {
     console.error("Document creation failed:", error);
