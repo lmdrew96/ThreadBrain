@@ -1,8 +1,8 @@
-import { getDocument, version as pdfjsVersion } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
 
-const CMAP_URL = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/cmaps/`;
-const STANDARD_FONT_URL = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/standard_fonts/`;
+// Disable worker in serverless — runs in same thread, which is fine for text extraction
+GlobalWorkerOptions.workerSrc = "";
 
 /**
  * Clean up raw text extracted from PDFs.
@@ -74,9 +74,10 @@ export async function extractTextFromPdf(
   const data = new Uint8Array(buffer);
   const doc = await getDocument({
     data,
-    cMapUrl: CMAP_URL,
-    cMapPacked: true,
-    standardFontDataUrl: STANDARD_FONT_URL,
+    // Skip external CMap/font fetches — not needed for basic text extraction
+    // and they fail in Vercel serverless (unpkg.com requests timeout)
+    useSystemFonts: true,
+    disableFontFace: true,
   }).promise;
 
   const pageTexts: string[] = [];
