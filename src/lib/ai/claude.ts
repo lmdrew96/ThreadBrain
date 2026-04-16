@@ -4,17 +4,21 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+export const HAIKU = "haiku-4-5";
+export const SONNET = "sonnet-4-6";
+
 interface ClaudeCallParams {
   system: string;
   user: string;
   maxTokens?: number;
+  model?: string;
 }
 
 export async function callClaude(params: ClaudeCallParams): Promise<string> {
   const start = Date.now();
 
   const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
+    model: params.model ?? HAIKU,
     max_tokens: params.maxTokens ?? 4096,
     system: params.system,
     messages: [{ role: "user", content: params.user }],
@@ -38,7 +42,7 @@ export async function callClaudeWithPrefill(
   const start = Date.now();
 
   const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
+    model: params.model ?? HAIKU,
     max_tokens: params.maxTokens ?? 4096,
     system: params.system,
     messages: [
@@ -87,7 +91,7 @@ export async function streamClaudeJsonArray(
   const start = Date.now();
 
   const stream = anthropic.messages.stream({
-    model: "claude-haiku-4-5-20251001",
+    model: params.model ?? HAIKU,
     max_tokens: params.maxTokens ?? 4096,
     system: params.system,
     messages: [

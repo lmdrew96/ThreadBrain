@@ -347,10 +347,10 @@ export function buildExpressPrompt(
     ? `They have until ${deadline} — calibrate depth accordingly. Less time = more ruthless prioritization.`
     : "";
 
-  // Send up to ~40000 chars for express mode — cram needs full coverage
-  // ~40k chars ≈ ~13k input tokens, well within Haiku's context window
-  const text = rawText.length > 40000
-    ? rawText.slice(0, 40000) + "\n\n[document continues...]"
+  // Send full document for express mode — cram needs complete coverage
+  // Haiku has 200k context. Cap at ~400k chars (~100k tokens) as a safety limit.
+  const text = rawText.length > 400000
+    ? rawText.slice(0, 400000) + "\n\n[document continues...]"
     : rawText;
 
   return `READER'S PURPOSE: ${purpose}

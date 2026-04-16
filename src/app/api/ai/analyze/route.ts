@@ -5,7 +5,7 @@ import { readingSessions, documents } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { callClaude } from "@/lib/ai/claude";
 import { MAP_SYSTEM_PROMPT, buildMapPrompt } from "@/lib/ai/prompts";
-import { truncateText } from "@/lib/utils";
+import { truncateWithEnding } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -51,8 +51,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Truncate for long documents (~8000 tokens)
-    const textForAnalysis = truncateText(doc.rawText, 8000);
+    // Send more text for better orientation — Haiku handles 200k tokens
+    // For very long docs, send beginning + end for full-document awareness
+    const textForAnalysis = truncateWithEnding(doc.rawText, 60000);
 
     const mapSummary = await callClaude({
       system: MAP_SYSTEM_PROMPT,

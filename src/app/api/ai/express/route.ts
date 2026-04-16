@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { expressSessions, documents } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { callClaudeJson } from "@/lib/ai/claude";
+import { callClaudeJson, SONNET } from "@/lib/ai/claude";
 import {
   EXPRESS_ANALYTICAL_PROMPT,
   EXPRESS_NARRATIVE_PROMPT,
@@ -93,6 +93,7 @@ export async function POST(req: NextRequest) {
         session.expressPurpose,
         deadlineStr
       ),
+      model: SONNET,
       maxTokens: 4096,
       prefill: "{",
     });
