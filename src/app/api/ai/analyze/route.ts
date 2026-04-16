@@ -51,9 +51,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Send more text for better orientation — Haiku handles 200k tokens
-    // For very long docs, send beginning + end for full-document awareness
-    const textForAnalysis = truncateWithEnding(doc.rawText, 60000);
+    // Send beginning + end for full-document awareness
+    // 20k tokens (~80k chars) is plenty for a 2-3 sentence orientation
+    const textForAnalysis = truncateWithEnding(doc.rawText, 20000);
 
     const mapSummary = await callClaude({
       system: MAP_SYSTEM_PROMPT,

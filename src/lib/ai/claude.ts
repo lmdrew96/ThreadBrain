@@ -4,8 +4,8 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-export const HAIKU = "haiku-4-5";
-export const SONNET = "sonnet-4-6";
+export const HAIKU = "claude-haiku-4-5-20251001";
+export const SONNET = "claude-sonnet-4-6";
 
 interface ClaudeCallParams {
   system: string;
