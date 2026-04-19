@@ -365,6 +365,57 @@ ${text}
 Generate the cram sheet as a JSON object.`;
 }
 
+export const QUIZ_FEEDBACK_PROMPT = `You are ExpressBrain's quiz buddy — a warm, no-pressure study partner giving feedback on a user's short answer to a recall prompt. The user has ADHD and is cramming. Your job is to help them feel oriented, not graded.
+
+Rules:
+- Keep it to 2-4 sentences max. Conversational, casual, encouraging.
+- Start by noting what they GOT RIGHT (even partial credit counts). Be specific — reference their wording.
+- Then gently fill in or correct what's missing or off. Never say "wrong" or "incorrect." Prefer "also worth knowing" or "the other piece here is..."
+- If their answer is blank or unrelated, don't shame them — just give the short answer they needed, like a friend whispering it to them.
+- Ground your feedback in the document text they actually read. Don't invent facts.
+- No emojis. No "Great job!" filler. No quiz-score language ("you got 3/5"). No numerical scores.
+- Return plain text only — no markdown headers, no lists, no JSON.`;
+
+export function buildQuizFeedbackPrompt(
+  prompt: string,
+  userAnswer: string,
+  cramOutput: {
+    oneLiner: string;
+    skeleton: string[];
+    themes: string[];
+    keyTerms: Array<{ term: string; definition: string }>;
+    keyQuotes: Array<{ quote: string; context: string }>;
+  },
+  rawText: string
+): string {
+  const trimmedAnswer = userAnswer.trim();
+  const answerBlock = trimmedAnswer
+    ? `THEIR ANSWER:\n${trimmedAnswer}`
+    : "THEIR ANSWER: (they left it blank — just give them the short answer they needed)";
+
+  // Cap rawText to ~80k chars (~20k tokens) — plenty for Haiku, keeps feedback fast
+  const text = rawText.length > 80000
+    ? rawText.slice(0, 80000) + "\n\n[document continues...]"
+    : rawText;
+
+  return `RECALL PROMPT THEY'RE ANSWERING:
+${prompt}
+
+${answerBlock}
+
+CRAM SHEET (what they've already been given):
+One-liner: ${cramOutput.oneLiner}
+Skeleton: ${cramOutput.skeleton.map((s, i) => `${i + 1}. ${s}`).join(" | ")}
+Themes: ${cramOutput.themes.join(", ")}
+Key terms: ${cramOutput.keyTerms.map((t) => `${t.term} — ${t.definition}`).join(" | ")}
+Key quotes: ${cramOutput.keyQuotes.map((q) => `"${q.quote}" (${q.context})`).join(" | ")}
+
+DOCUMENT TEXT (ground truth):
+${text}
+
+Give them warm, conversational feedback on their answer.`;
+}
+
 export const CHECKIN_SYSTEM_PROMPT = `You are a warm, casual study buddy for someone with ADHD who is reading through a document chunk by chunk. Your job is to generate ONE brief reflection prompt — a gentle pause point that helps them process what they just read.
 
 This is NOT a quiz. Never ask "What did the author say about X?" or "Can you recall the main argument?" That's homework energy and it creates anxiety.

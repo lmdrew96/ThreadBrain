@@ -30,7 +30,12 @@ export default function ExpressCramPage() {
   // Quiz mode
   const [quizActive, setQuizActive] = useState(false);
   const [quizIdx, setQuizIdx] = useState(0);
-  const [revealAnswer, setRevealAnswer] = useState(false);
+  const [quizAnswer, setQuizAnswer] = useState("");
+  const [quizFeedback, setQuizFeedback] = useState<string | null>(null);
+  const [quizFeedbackLoading, setQuizFeedbackLoading] = useState(false);
+  const [quizFeedbackError, setQuizFeedbackError] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     async function load() {
@@ -41,7 +46,13 @@ export default function ExpressCramPage() {
         const sessionData = await sessionRes.json();
         setSession(sessionData);
 
-        // Generate or load cram output
+        // If cram output is already cached on the session, use it directly.
+        // Only hit the AI endpoint when generation is actually needed.
+        if (sessionData.cramOutput) {
+          setCramOutput(sessionData.cramOutput);
+          return;
+        }
+
         const aiRes = await fetch("/api/ai/express", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -277,7 +288,9 @@ export default function ExpressCramPage() {
           onClick={() => {
             setQuizActive(true);
             setQuizIdx(0);
-            setRevealAnswer(false);
+            setQuizAnswer("");
+            setQuizFeedback(null);
+            setQuizFeedbackError(null);
           }}
           className="w-full rounded-xl border border-dashed border-primary/30 p-4 text-center text-sm font-medium text-primary hover:bg-primary/5 transition-colors mt-4"
         >
@@ -294,7 +307,9 @@ export default function ExpressCramPage() {
             <button
               onClick={() => {
                 setQuizActive(false);
-                setRevealAnswer(false);
+                setQuizAnswer("");
+                setQuizFeedback(null);
+                setQuizFeedbackError(null);
               }}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -306,20 +321,89 @@ export default function ExpressCramPage() {
             {cramOutput.recallPrompts[quizIdx]}
           </p>
 
-          {!revealAnswer ? (
-            <button
-              onClick={() => setRevealAnswer(true)}
-              className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
-            >
-              Think about it... then tap to move on
-            </button>
+          <textarea
+            value={quizAnswer}
+            onChange={(e) => setQuizAnswer(e.target.value)}
+            placeholder="Type a short answer (optional)..."
+            rows={3}
+            disabled={quizFeedbackLoading || !!quizFeedback}
+            className="w-full rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none disabled:opacity-70"
+          />
+
+          {quizFeedbackError && (
+            <p className="text-xs text-destructive">{quizFeedbackError}</p>
+          )}
+
+          {quizFeedback && (
+            <div className="rounded-lg border bg-card p-3 text-sm leading-relaxed whitespace-pre-wrap">
+              {quizFeedback}
+            </div>
+          )}
+
+          {!quizFeedback ? (
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={async () => {
+                  if (!quizAnswer.trim() || quizFeedbackLoading) return;
+                  setQuizFeedbackLoading(true);
+                  setQuizFeedbackError(null);
+                  try {
+                    const res = await fetch("/api/ai/express/feedback", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        sessionId,
+                        prompt: cramOutput.recallPrompts[quizIdx],
+                        userAnswer: quizAnswer,
+                      }),
+                    });
+                    if (!res.ok) throw new Error("Feedback failed");
+                    const { feedback } = await res.json();
+                    setQuizFeedback(feedback);
+                  } catch {
+                    setQuizFeedbackError(
+                      "Couldn't get feedback right now. You can move on."
+                    );
+                  } finally {
+                    setQuizFeedbackLoading(false);
+                  }
+                }}
+                disabled={!quizAnswer.trim() || quizFeedbackLoading}
+                className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {quizFeedbackLoading ? "Checking..." : "Get feedback"}
+              </button>
+              <button
+                onClick={() => {
+                  if (quizIdx < cramOutput.recallPrompts.length - 1) {
+                    setQuizIdx((i) => i + 1);
+                    setQuizAnswer("");
+                    setQuizFeedback(null);
+                    setQuizFeedbackError(null);
+                  } else {
+                    setQuizActive(false);
+                    setQuizAnswer("");
+                    setQuizFeedback(null);
+                    setQuizFeedbackError(null);
+                  }
+                }}
+                disabled={quizFeedbackLoading}
+                className="flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+              >
+                {quizIdx < cramOutput.recallPrompts.length - 1
+                  ? "Just thinking — next"
+                  : "Just thinking — done"}
+              </button>
+            </div>
           ) : (
             <div className="flex gap-2">
               {quizIdx < cramOutput.recallPrompts.length - 1 ? (
                 <button
                   onClick={() => {
                     setQuizIdx((i) => i + 1);
-                    setRevealAnswer(false);
+                    setQuizAnswer("");
+                    setQuizFeedback(null);
+                    setQuizFeedbackError(null);
                   }}
                   className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
@@ -329,7 +413,9 @@ export default function ExpressCramPage() {
                 <button
                   onClick={() => {
                     setQuizActive(false);
-                    setRevealAnswer(false);
+                    setQuizAnswer("");
+                    setQuizFeedback(null);
+                    setQuizFeedbackError(null);
                   }}
                   className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >

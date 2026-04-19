@@ -6,9 +6,19 @@ import { useRouter } from "next/navigation";
 import { Trash2, BookMarked, Plus, Check, ChevronDown, Zap } from "lucide-react";
 import type { Document, ReadingSession, Shelf } from "@/types";
 
+interface ExpressSessionMeta {
+  id: string;
+  documentId: string;
+  expressPurpose: "discussion" | "quiz" | "essay" | "conversation";
+  deadline: string | null;
+  status: "active" | "completed";
+  createdAt: string;
+}
+
 interface DocumentWithSession extends Document {
   latestSession: (ReadingSession & { totalChunks: number }) | null;
   expressCount: number;
+  expressSessions: ExpressSessionMeta[];
 }
 
 type Filter = "all" | "unshelved" | string; // string = shelfId
@@ -428,7 +438,9 @@ function DocumentCard({
   const session = doc.latestSession;
   const [deleteState, setDeleteState] = useState<"idle" | "confirm" | "deleting">("idle");
   const [shelfOpen, setShelfOpen] = useState(false);
+  const [expressOpen, setExpressOpen] = useState(false);
   const shelfRef = useRef<HTMLDivElement>(null);
+  const expressRef = useRef<HTMLDivElement>(null);
 
   const currentShelf = shelves.find((s) => s.id === doc.shelfId);
 
@@ -443,6 +455,18 @@ function DocumentCard({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [shelfOpen]);
+
+  // Close express dropdown on outside click
+  useEffect(() => {
+    if (!expressOpen) return;
+    function handler(e: MouseEvent) {
+      if (expressRef.current && !expressRef.current.contains(e.target as Node)) {
+        setExpressOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [expressOpen]);
 
   function handleCardClick() {
     if (!session) {
@@ -538,6 +562,65 @@ function DocumentCard({
 
         {/* Action buttons — always visible on mobile, hover-only on desktop */}
         <div className="flex items-center gap-1.5 px-2 sm:px-3 sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity shrink-0">
+          {/* Past cram sheets */}
+          {doc.expressCount > 0 && (
+            <div className="relative" ref={expressRef}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpressOpen((o) => !o);
+                }}
+                className="flex items-center gap-1 rounded-md border px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title="Past cram sheets"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <ChevronDown className="w-3 h-3" />
+              </button>
+
+              {expressOpen && (
+                <div className="absolute right-0 top-full mt-1 z-20 w-64 max-w-[calc(100vw-2rem)] rounded-lg border bg-card shadow-lg py-1 text-sm">
+                  <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b">
+                    Cram sheets
+                  </div>
+                  {doc.expressSessions.map((es) => {
+                    const created = new Date(es.createdAt).toLocaleDateString(
+                      "en-US",
+                      { month: "short", day: "numeric" }
+                    );
+                    const deadline = es.deadline
+                      ? new Date(es.deadline).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : null;
+                    return (
+                      <Link
+                        key={es.id}
+                        href={`/express/${es.id}`}
+                        onClick={() => setExpressOpen(false)}
+                        className="block px-3 py-2 hover:bg-muted transition-colors"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="capitalize font-medium truncate">
+                            {es.expressPurpose}
+                          </span>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {created}
+                          </span>
+                        </div>
+                        {deadline && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            For {deadline}
+                          </p>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Shelf picker */}
           <div className="relative" ref={shelfRef}>
             <button

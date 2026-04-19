@@ -55,24 +55,37 @@ export async function GET() {
     }
   }
 
-  // Fetch express sessions for these documents
+  // Fetch express sessions for these documents (metadata only — no cramOutput)
   const userExpressSessions = await db
-    .select()
+    .select({
+      id: expressSessions.id,
+      documentId: expressSessions.documentId,
+      expressPurpose: expressSessions.expressPurpose,
+      deadline: expressSessions.deadline,
+      status: expressSessions.status,
+      createdAt: expressSessions.createdAt,
+    })
     .from(expressSessions)
     .where(eq(expressSessions.userId, userId))
     .orderBy(desc(expressSessions.createdAt));
 
-  // Group express sessions by document — count per doc
-  const expressCountByDoc = new Map<string, number>();
+  // Group express sessions by document
+  const expressByDoc = new Map<string, typeof userExpressSessions>();
   for (const es of userExpressSessions) {
-    expressCountByDoc.set(es.documentId, (expressCountByDoc.get(es.documentId) ?? 0) + 1);
+    const existing = expressByDoc.get(es.documentId) ?? [];
+    existing.push(es);
+    expressByDoc.set(es.documentId, existing);
   }
 
-  const result = userDocs.map((doc) => ({
-    ...doc,
-    latestSession: sessionsByDoc.get(doc.id) ?? null,
-    expressCount: expressCountByDoc.get(doc.id) ?? 0,
-  }));
+  const result = userDocs.map((doc) => {
+    const docExpress = expressByDoc.get(doc.id) ?? [];
+    return {
+      ...doc,
+      latestSession: sessionsByDoc.get(doc.id) ?? null,
+      expressCount: docExpress.length,
+      expressSessions: docExpress,
+    };
+  });
 
   return NextResponse.json(result);
 }
